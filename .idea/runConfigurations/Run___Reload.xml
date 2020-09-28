@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Run &amp; Reload" type="CompoundRunConfigurationType">
+    <toRun name="Run Root Gradle" type="GradleRunConfiguration" />
+    <toRun name="Continuous Build" type="GradleRunConfiguration" />
+    <method v="2" />
+  </configuration>
+</component>

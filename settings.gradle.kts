@@ -8,5 +8,6 @@
  */
 
 rootProject.name = "DoodleBot"
+// Projects are run in lexicographical order
 include("DoodleBotTelegramBot")
 include("DoodleBotWebBackend")

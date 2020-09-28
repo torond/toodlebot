@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="https://npmcdn.com/flatpickr/dist/themes/airbnb.css">
+    <style>
+        :root {
+            --custom-width-full: 100%;
+            --custom-width-day: calc(var(--custom-width-full) / 7);
+        }
+
+        .custom-btn-holder {
+            display: flex;
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+        }
+
+        .custom-btn-holder button {
+            flex-grow: 1;
+        }
+
+        .flatpickr-calendar {
+            width: var(--custom-width-full);
+        }
+
+        .dayContainer {
+            width: var(--custom-width-full);
+            max-width: var(--custom-width-full);
+            min-width: var(--custom-width-full);
+        }
+
+        .flatpickr-days {
+            width: var(--custom-width-full);
+        }
+
+        .flatpickr-day {
+            max-width: var(--custom-width-day);
+        }
+    </style>
+</head>
+<body>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<div class="picker" id="pkr"></div>
+<div class="custom-btn-holder">
+    <button type="button">Cancel</button>
+    <button id="confirm-button" type="button">Confirm</button>
+</div>
+<script>
+    const fp = flatpickr("#pkr", {
+        inline: true,
+        disableMobile: "true",
+        static: true, //necessary?
+        mode: "multiple"
+    });
+
+    xhr = new XMLHttpRequest();
+    xhr.open('POST', '/genDoodle');
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.onload = function () {
+        if (xhr.status !== 200) {
+            alert('Request failed. Returned status of ' + xhr.status);
+        }
+    };
+    document.getElementById("confirm-button").addEventListener("click",
+            function () {
+                xhr.send(JSON.stringify(fp.selectedDates))
+            },
+            false
+    );
+</script>
+</body>
+</html>
