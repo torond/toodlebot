@@ -21,6 +21,7 @@ repositories {
     mavenLocal()
     jcenter()
     maven { url = uri("https://kotlin.bintray.com/ktor") }
+    maven("https://jitpack.io")
 }
 
 dependencies {
@@ -31,6 +32,7 @@ dependencies {
     implementation("io.ktor:ktor-mustache:$ktor_version")
     implementation("io.ktor:ktor-gson:$ktor_version")
     testImplementation("io.ktor:ktor-server-tests:$ktor_version")
+    implementation("com.github.elbekD:kt-telegram-bot:1.3.5")
 }
 
 kotlin.sourceSets["main"].kotlin.srcDirs("src")
