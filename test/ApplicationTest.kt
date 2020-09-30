@@ -6,6 +6,7 @@ import io.ktor.request.*
 import io.ktor.routing.*
 import io.ktor.http.*
 import com.github.mustachejava.DefaultMustacheFactory
+import io.doodlebot.backend.module
 import io.ktor.mustache.Mustache
 import io.ktor.mustache.MustacheContent
 import io.ktor.gson.*
