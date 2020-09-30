@@ -9,35 +9,36 @@ import io.ktor.mustache.Mustache
 import io.ktor.mustache.MustacheContent
 import io.ktor.gson.*
 import io.ktor.features.*
+import io.ktor.request.*
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
+
+/* Maybe instead:
+fun main() {
+    embeddedServer(Netty, port = 8080, host = "127.0.0.1", module = Application::module, watchPaths = listOf("/DoodleBotWebBackend/")).start(wait = true)
+}
+ */
 
 @Suppress("unused") // Referenced in application.conf
 @kotlin.jvm.JvmOverloads
 fun Application.module(testing: Boolean = false) {
-    install(Mustache) {
-        mustacheFactory = DefaultMustacheFactory("templates/mustache")
-    }
-
-    install(ContentNegotiation) {
-        gson {
-        }
-    }
+    install(Mustache) { mustacheFactory = DefaultMustacheFactory("templates") }
+    install(ContentNegotiation) { gson {} }
 
     routing {
-        get("/") {
-            call.respondText("HELLO WORLD!", contentType = ContentType.Text.Plain)
+        get("/setup") {
+            val formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy")
+            val formattedDate = LocalDate.now().format(formatter)
+            val config = DoodleConfig(formattedDate)
+            call.respond(MustacheContent("frontend.hbs", mapOf("config" to config)))
         }
 
-        get("/html-mustache") {
-            call.respond(MustacheContent("templates/index.hbs", mapOf("user" to MustacheUser(1, "user1"))))
-        }
-
-        get("/json/gson") {
-            call.respond(mapOf("hello" to "world"))
+        post("/genDoodle") {
+            val pickedDates: List<LocalDate> = call.receive()
+            println(pickedDates)
+            call.respond(HttpStatusCode.OK)
         }
     }
 }
-
-data class MustacheUser(val id: Int, val name: String)
-
