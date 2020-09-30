@@ -2,7 +2,6 @@ package io.doodlebot.backend
 
 import io.ktor.application.*
 import io.ktor.response.*
-import io.ktor.request.*
 import io.ktor.routing.*
 import io.ktor.http.*
 import com.github.mustachejava.DefaultMustacheFactory
@@ -31,7 +30,7 @@ fun Application.module(testing: Boolean = false) {
         }
 
         get("/html-mustache") {
-            call.respond(MustacheContent("index.hbs", mapOf("user" to MustacheUser(1, "user1"))))
+            call.respond(MustacheContent("templates/index.hbs", mapOf("user" to MustacheUser(1, "user1"))))
         }
 
         get("/json/gson") {
