@@ -1,0 +1,32 @@
+name: Integrate
+
+on:
+  #push:
+  #  branches:
+  #    - master
+  pull_request:
+    branches:
+      - '*'
+
+jobs:
+  gradle:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+      - name: Validate Gradle Wrapper
+        uses: gradle/wrapper-validation-action@v1.0.3
+      - name: Cache Gradle Caches
+        uses: actions/cache@v1
+        with:
+          path: ~/.gradle/caches/
+          key: cache-gradle-cache
+      - name: Cache Gradle Wrapper
+        uses: actions/cache@v1
+        with:
+          path: ~/.gradle/wrapper/
+          key: cache-gradle-wrapper
+      - name: Run Gradle tasks
+        run: ./gradlew check --continue # build check publishToMavenLocal --continue
+      - name: Stop Gradle
+        run: ./gradlew --stop
