@@ -15,13 +15,15 @@ import kotlin.test.*
 import io.ktor.server.testing.*
 
 class ApplicationTest {
-    /*@Test
-    fun testRoot() {
+    @Test
+    fun `Setup page should contain relevant elements`() {
         withTestApplication({ module(testing = true) }) {
-            handleRequest(HttpMethod.Get, "/").apply {
+            handleRequest(HttpMethod.Get, "/setup").apply {
                 assertEquals(HttpStatusCode.OK, response.status())
-                assertEquals("HELLO WORLD!", response.content)
+                assertTrue(response.content!!.contains("flatpickr"))
+                assertTrue(response.content!!.contains("Confirm"))
+                assertTrue(response.content!!.contains("Cancel"))
             }
         }
-    }*/
+    }
 }
