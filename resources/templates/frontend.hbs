@@ -43,7 +43,7 @@
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
 <div class="picker" id="pkr"></div>
-<p>{{config.text}}</p>
+<p>{{config.description}}</p>
 
 {{#data.numberOfParticipants}}
     <p>data.numberOfParticipants participants so far.</p>
@@ -67,7 +67,7 @@
     });
 
     xhr = new XMLHttpRequest();
-    xhr.open('POST', '/genDoodle');
+    xhr.open('POST', {{config.confirmRecipientUrl}});
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.onload = function () {
         if (xhr.status !== 200) {
