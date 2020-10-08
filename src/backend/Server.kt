@@ -28,16 +28,16 @@ fun Application.module(testing: Boolean = false) {
     install(ContentNegotiation) { gson {} }
 
     routing {
+        /** Setup and Admin Edit Endpoint */
         get("/setup") {
-            val formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy")
-            val formattedDate = LocalDate.now().format(formatter)
-            val config = DoodleConfig(formattedDate)
-            call.respond(MustacheContent("frontend.hbs", mapOf("config" to config)))
+            // TODO: Generate Crypto URL and redirect
+            call.respond(MustacheContent("frontend.hbs", mapOf("config" to DoodleConfig.SETUP)))
         }
 
         post("/genDoodle") {
             val pickedDates: List<LocalDate> = call.receive()
             println(pickedDates)
+            // TODO: Persist dates
             call.respond(HttpStatusCode.OK)
         }
     }

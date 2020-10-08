@@ -43,16 +43,27 @@
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
 <div class="picker" id="pkr"></div>
+<p>{{config.text}}</p>
+
+{{#data.numberOfParticipants}}
+    <p>data.numberOfParticipants participants so far.</p>
+{{/data.numberOfParticipants}}
+
 <div class="custom-btn-holder">
     <button type="button">Cancel</button>
-    <button id="confirm-button" type="button">Confirm</button>
+    {{#config.hasConfirmButton}}
+        <button id="confirm-button" type="button">Confirm</button>
+    {{/config.hasConfirmButton}}
 </div>
+
 <script>
     const fp = flatpickr("#pkr", {
         inline: true,
         disableMobile: "true",
         static: true, //necessary?
-        mode: "multiple"
+        mode: "multiple",
+        {{#data.pickedDates}}defaultDate: data.pickedDates,{{/data.pickedDates}}
+        {{#data.pickableDates}}enable: data.pickableDates,{{/data.pickableDates}}
     });
 
     xhr = new XMLHttpRequest();
