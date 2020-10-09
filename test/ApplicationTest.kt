@@ -6,6 +6,9 @@ import io.ktor.request.*
 import io.ktor.routing.*
 import io.ktor.http.*
 import com.github.mustachejava.DefaultMustacheFactory
+import io.doodlebot.backend.model.DoodleDates
+import io.doodlebot.backend.model.DoodleInfos
+import io.doodlebot.backend.model.InfoJoinDate
 import io.doodlebot.backend.module
 import io.ktor.mustache.Mustache
 import io.ktor.mustache.MustacheContent
@@ -13,9 +16,13 @@ import io.ktor.gson.*
 import io.ktor.features.*
 import kotlin.test.*
 import io.ktor.server.testing.*
+import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.insertAndGetId
+import org.jetbrains.exposed.sql.transactions.transaction
+import java.time.LocalDate
 
 class ApplicationTest {
-@Test
+    @Test
     fun `Setup page should show relevant elements`() {
         withTestApplication({ module(testing = true) }) {
             handleRequest(HttpMethod.Get, "/setup").apply {
@@ -27,3 +34,5 @@ class ApplicationTest {
         }
     }
 }
+
+
