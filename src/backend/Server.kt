@@ -5,13 +5,16 @@ import io.ktor.response.*
 import io.ktor.routing.*
 import io.ktor.http.*
 import com.github.mustachejava.DefaultMustacheFactory
+import io.doodlebot.backend.model.DoodleInfo
+import io.doodlebot.backend.model.NewDoodleInfo
+import io.doodlebot.backend.service.DatabaseFactory
+import io.doodlebot.backend.service.DatabaseService
 import io.ktor.mustache.Mustache
 import io.ktor.mustache.MustacheContent
 import io.ktor.gson.*
 import io.ktor.features.*
 import io.ktor.request.*
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
@@ -27,6 +30,9 @@ fun Application.module(testing: Boolean = false) {
     install(Mustache) { mustacheFactory = DefaultMustacheFactory("templates") }
     install(ContentNegotiation) { gson {} }
 
+    DatabaseFactory.init()
+    val databaseService = DatabaseService()
+
     routing {
         /** Endpoint for setting up and editing the initial dates of a Doodle */
         get("/setup") {
@@ -37,7 +43,9 @@ fun Application.module(testing: Boolean = false) {
         /** Accepts setup dates for the Doodle */
         post("/setup") {
             val pickedDates: List<LocalDate> = call.receive()
+            val temp = databaseService.addDoodle(NewDoodleInfo(numberOfParticipants = pickedDates.size))
             // TODO: Persist dates
+            println(temp)
             call.respond(HttpStatusCode.OK)
         }
 
