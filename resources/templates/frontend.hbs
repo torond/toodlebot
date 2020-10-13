@@ -67,6 +67,12 @@
         {{#data.pickableDates}}enable: data.pickableDates,{{/data.pickableDates}}
     });
 
+    function formatDate(date) {
+        return date.getFullYear() + '-'
+                + ('0' + date.getMonth()).slice(-2) + '-'
+                + ('0' + date.getDate()).slice(-2)
+    }
+
     xhr = new XMLHttpRequest();
     xhr.open('POST', '{{config.confirmRecipientUrl}}');
     xhr.setRequestHeader('Content-Type', 'application/json');
@@ -77,7 +83,7 @@
     };
     document.getElementById("confirm-button").addEventListener("click",
             function () {
-                xhr.send(JSON.stringify(fp.selectedDates))
+                xhr.send(JSON.stringify(fp.selectedDates.map(x => formatDate(x))))
             },
             false
     );
