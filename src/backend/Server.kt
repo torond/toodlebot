@@ -1,20 +1,21 @@
 package io.doodlebot.backend
 
-import io.ktor.application.*
-import io.ktor.response.*
-import io.ktor.routing.*
-import io.ktor.http.*
 import com.github.mustachejava.DefaultMustacheFactory
-import io.doodlebot.backend.model.DoodleInfo
 import io.doodlebot.backend.model.NewDoodleInfo
 import io.doodlebot.backend.service.DatabaseFactory
 import io.doodlebot.backend.service.DatabaseService
-import io.ktor.mustache.Mustache
-import io.ktor.mustache.MustacheContent
-import io.ktor.gson.*
+import io.ktor.application.*
 import io.ktor.features.*
+import io.ktor.gson.*
+import io.ktor.http.*
+import io.ktor.mustache.*
 import io.ktor.request.*
+import io.ktor.response.*
+import io.ktor.routing.*
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.*
+
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
@@ -33,6 +34,9 @@ fun Application.module(testing: Boolean = false) {
     DatabaseFactory.init()
     val databaseService = DatabaseService()
 
+    val inputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+    val outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+
     routing {
         /** Endpoint for setting up and editing the initial dates of a Doodle */
         get("/setup") {
@@ -42,10 +46,10 @@ fun Application.module(testing: Boolean = false) {
 
         /** Accepts setup dates for the Doodle */
         post("/setup") {
-            val pickedDates: List<LocalDate> = call.receive()
-            val temp = databaseService.addDoodle(NewDoodleInfo(numberOfParticipants = pickedDates.size))
-            // TODO: Persist dates
-            println(temp)
+            val pickedDatesRaw: List<String> = call.receive()
+            val pickedDates = pickedDatesRaw.map { LocalDate.parse(it, inputFormatter) }
+            val createdDoodleId = databaseService.addDoodleWithDates(NewDoodleInfo(), pickedDates)
+            //val temp2 = databaseService.getDatesByDoodleId(createdDoodleInfo.id)
             call.respond(HttpStatusCode.OK)
         }
 

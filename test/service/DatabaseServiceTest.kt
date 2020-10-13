@@ -1,29 +1,14 @@
 package io.doodlebot.service
 
-import io.ktor.application.*
-import io.ktor.response.*
-import io.ktor.request.*
-import io.ktor.routing.*
-import io.ktor.http.*
-import com.github.mustachejava.DefaultMustacheFactory
-import io.doodlebot.backend.model.DoodleDates
 import io.doodlebot.backend.model.DoodleInfos
-import io.doodlebot.backend.model.InfoJoinDate
 import io.doodlebot.backend.model.NewDoodleInfo
-import io.doodlebot.backend.module
 import io.doodlebot.backend.service.DatabaseService
-import io.ktor.mustache.Mustache
-import io.ktor.mustache.MustacheContent
-import io.ktor.gson.*
-import io.ktor.features.*
 import kotlin.test.*
-import io.ktor.server.testing.*
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.insertAndGetId
-import org.jetbrains.exposed.sql.transactions.transaction
-import org.junit.Assert.assertThat
+import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.dao.id.IdTable
 import java.time.LocalDate
+import java.util.*
 
 class DatabaseServiceTest {
     private val databaseService = DatabaseService()
@@ -31,17 +16,50 @@ class DatabaseServiceTest {
     @Test
     fun `Add simple DoodleInfo`() = runBlocking {
         //given
-        val doodleInfo = NewDoodleInfo(numberOfParticipants = 5)
+        val doodleInfo = NewDoodleInfo()
 
         //when
-        val saved = databaseService.addDoodle(doodleInfo)
+        val savedId = databaseService.addDoodle(doodleInfo)
 
         //then
-        val retrieved = databaseService.getDoodle(saved.id)
-        assertEquals(retrieved, saved)
-        assertEquals(retrieved?.id, saved.id)
-        assertEquals(retrieved?.numberOfParticipants, saved.numberOfParticipants)
+        val retrieved = databaseService.getDoodle(savedId)
+        assertEquals(retrieved?.id, savedId.value)
+        assertEquals(retrieved?.numberOfParticipants, doodleInfo.numberOfParticipants)
 
         Unit
+    }
+
+    @Test
+    fun `Add simple dates`() = runBlocking {
+        //given
+        val dates = listOf(LocalDate.parse("2019-03-27"), LocalDate.parse("2019-03-28"), LocalDate.parse("2019-03-29"))
+
+        //when
+        val savedIds = databaseService.addDates(dates)
+
+        //then
+        val retrieved = databaseService.getDates(savedIds).map { it?.doodleDate }
+        assertTrue(dates.size == retrieved.size
+                && dates.containsAll(retrieved)
+                && retrieved.containsAll(dates))
+    }
+
+    @Test
+    fun `Add Doodle with Dates`() = runBlocking {
+        //given
+        val doodleInfo = NewDoodleInfo()
+        val dates = listOf(LocalDate.parse("2019-03-27"), LocalDate.parse("2019-03-28"), LocalDate.parse("2019-03-29"))
+
+        //when
+        val savedDoodleId = databaseService.addDoodleWithDates(doodleInfo, dates)
+
+        //then
+        val retrievedDates = databaseService.getDatesByDoodleId(savedDoodleId)?.map { it.doodleDate }
+        assertTrue(dates.size == retrievedDates?.size
+                && dates.containsAll(retrievedDates)
+                && retrievedDates.containsAll(dates))
+
+        val retrievedDoodleId = databaseService.getDoodle(EntityID(savedDoodleId, DoodleInfos))?.id // Is importing Tables allowed here?
+        assertEquals(savedDoodleId, retrievedDoodleId)
     }
 }

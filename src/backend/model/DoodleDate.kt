@@ -5,10 +5,10 @@ import org.jetbrains.exposed.sql.`java-time`.date
 import java.time.LocalDate
 
 object DoodleDates : IntIdTable() {
-    val doodleDate = date("date")
+    val doodleDate = date("doodleDate")
 }
 
 data class DoodleDate(
+    val id: Int,
     val doodleDate: LocalDate
 )
-

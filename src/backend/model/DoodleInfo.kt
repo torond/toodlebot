@@ -13,5 +13,5 @@ data class DoodleInfo(
 )
 
 data class NewDoodleInfo(
-    val numberOfParticipants: Int
+    val numberOfParticipants: Int = 0
 )
