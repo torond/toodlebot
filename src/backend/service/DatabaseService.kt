@@ -27,6 +27,22 @@ class DatabaseService {
         }
     }.map { it[DoodleDates.id] }
 
+    suspend fun addDatesIfNotExisting(dates: List<LocalDate>): List<EntityID<Int>> {
+        var l: MutableList<EntityID<Int>> = mutableListOf()
+        for (date in dates) {
+            val insertedId = dbQuery {
+                DoodleDates.insertIgnoreAndGetId { it[doodleDate] = date }
+            } ?: dbQuery {
+                DoodleDates.select { (DoodleDates.doodleDate eq date) }
+                        .map { row -> row[DoodleDates.id] }
+                        .single()
+            }
+            l.add(insertedId)
+
+        }
+        return l
+    }
+
     suspend fun getDate(id: EntityID<Int>): DoodleDate? = dbQuery {
         DoodleDates.select {
             DoodleDates.id eq id.value
@@ -44,7 +60,7 @@ class DatabaseService {
 
     suspend fun addDoodleWithDates(doodle: NewDoodleInfo, dates: List<LocalDate>): UUID {
         val doodleId = addDoodle(doodle)
-        val dateIds = addDates(dates)
+        val dateIds = addDatesIfNotExisting(dates)
         addInfoJoinDate(doodleId, dateIds)
 
         return doodleId.value
@@ -54,6 +70,14 @@ class DatabaseService {
         (DoodleInfos crossJoin InfoJoinDate crossJoin DoodleDates).select {
             (DoodleInfos.id eq id) and (DoodleInfos.id eq InfoJoinDate.doodleInfo) and (DoodleDates.id eq InfoJoinDate.doodleDate)
         }.map { toDoodleDate(it) }
+    }
+
+    suspend fun updateDoodleWithDates(id: UUID, dates: List<LocalDate>) {
+        // Given: Doodle UUID, List of Dates
+        // Do: Add new dates, remove old dates and return list of dates
+        // Do: Add new doodlejoindates, remove old doodlejoindates
+        val dateIds = 0
+
     }
 
     private fun toDoodleInfo (row: ResultRow): DoodleInfo =

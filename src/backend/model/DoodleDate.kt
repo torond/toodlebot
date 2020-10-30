@@ -6,6 +6,9 @@ import java.time.LocalDate
 
 object DoodleDates : IntIdTable() {
     val doodleDate = date("doodleDate")
+    init {
+        index(true, doodleDate)
+    }
 }
 
 data class DoodleDate(
