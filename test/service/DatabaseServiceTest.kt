@@ -45,6 +45,28 @@ class DatabaseServiceTest {
     }
 
     @Test
+    fun `Reuse old date entries`() = runBlocking {
+        //given two lists with 4 unique dates
+        val dates1 = listOf(LocalDate.parse("2019-03-26"), LocalDate.parse("2019-03-27"), LocalDate.parse("2019-03-28"))
+        val dates2 = listOf(LocalDate.parse("2019-03-27"), LocalDate.parse("2019-03-28"), LocalDate.parse("2019-03-29"))
+
+        //when
+        val savedIds1 = databaseService.addDatesIfNotExisting(dates1)
+        val savedIds2 = databaseService.addDatesIfNotExisting(dates2)
+
+        //then
+        val dateSet = dates1 union dates2
+        val savedIdSet = savedIds1 union savedIds2
+        val retrieved = databaseService.getDates(savedIdSet.toList()).map { it?.doodleDate }
+        println(dateSet)
+        println(savedIdSet)
+        assertTrue(dateSet.size == savedIdSet.size
+                && retrieved.containsAll(dates1)
+                && retrieved.containsAll(dates2))
+
+    }
+
+    @Test
     fun `Add Doodle with Dates`() = runBlocking {
         //given
         val doodleInfo = NewDoodleInfo()
