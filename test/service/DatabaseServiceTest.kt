@@ -84,4 +84,22 @@ class DatabaseServiceTest {
         val retrievedDoodleId = databaseService.getDoodle(EntityID(savedDoodleId, DoodleInfos))?.id // Is importing Tables allowed here?
         assertEquals(savedDoodleId, retrievedDoodleId)
     }
+
+    @Test
+    fun `Update Dates`() = runBlocking {
+        //given
+        val doodleInfo = NewDoodleInfo()
+        val dates = listOf(LocalDate.parse("2018-03-26"), LocalDate.parse("2018-03-27"))
+        val savedDoodleId = databaseService.addDoodleWithDates(doodleInfo, dates)
+
+        //when
+        val newDates = listOf(LocalDate.parse("2018-03-27"), LocalDate.parse("2018-03-28"), LocalDate.parse("2018-03-29"))
+        databaseService.updateDoodleWithDates(savedDoodleId, newDates)
+
+        //Then
+        val retrievedDates = databaseService.getDatesByDoodleId(savedDoodleId)?.map { it.doodleDate }
+        assertTrue(newDates.size == retrievedDates?.size
+                && newDates.containsAll(retrievedDates)
+                && retrievedDates.containsAll(newDates))
+    }
 }
