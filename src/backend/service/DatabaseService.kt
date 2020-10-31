@@ -58,6 +58,19 @@ class DatabaseService {
         }
     }
 
+    suspend fun updateInfoJoinDate(infoId: UUID, newDateIds: List<EntityID<Int>>) {
+        val oldDateIds = getDateIdsByDoodleId(infoId)
+        val toBeDeleted = oldDateIds.minus(newDateIds)
+        val toBeAdded = newDateIds.minus(oldDateIds)
+        dbQuery {
+            InfoJoinDate.deleteWhere { (InfoJoinDate.doodleInfo eq infoId) and (InfoJoinDate.doodleDate inList toBeDeleted) }
+            InfoJoinDate.batchInsert(toBeAdded) {
+                this[InfoJoinDate.doodleDate] = it
+                this[InfoJoinDate.doodleInfo] = infoId
+            }
+        }
+    }
+
     suspend fun addDoodleWithDates(doodle: NewDoodleInfo, dates: List<LocalDate>): UUID {
         val doodleId = addDoodle(doodle)
         val dateIds = addDatesIfNotExisting(dates)
@@ -72,12 +85,17 @@ class DatabaseService {
         }.map { toDoodleDate(it) }
     }
 
-    suspend fun updateDoodleWithDates(id: UUID, dates: List<LocalDate>) {
-        // Given: Doodle UUID, List of Dates
-        // Do: Add new dates, remove old dates and return list of dates
-        // Do: Add new doodlejoindates, remove old doodlejoindates
-        val dateIds = 0
+    // Should the return type be optional?
+    suspend fun getDateIdsByDoodleId(id: UUID): List<EntityID<Int>> = dbQuery {
+        (DoodleInfos crossJoin InfoJoinDate crossJoin DoodleDates).select {
+            (DoodleInfos.id eq id) and (DoodleInfos.id eq InfoJoinDate.doodleInfo) and (DoodleDates.id eq InfoJoinDate.doodleDate)
+        }.map { it[DoodleDates.id] }
+    }
 
+    suspend fun updateDoodleWithDates(id: UUID, dates: List<LocalDate>) {
+        // TODO: Remove globally unused date entries
+        val dateIds = addDatesIfNotExisting(dates)
+        updateInfoJoinDate(id, dateIds)
     }
 
     private fun toDoodleInfo (row: ResultRow): DoodleInfo =
