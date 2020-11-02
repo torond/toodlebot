@@ -63,14 +63,23 @@ fun Application.module(testing: Boolean = false) {
         }
 
         /** Endpoint for answering and editing the answers of a Doodle */
-        get("/edit") {
-            // TODO: Accept Crypto URL
-            // TODO: Authentication / recognize user
-            call.respond(MustacheContent("frontend.hbs", mapOf("config" to DoodleConfig.EDIT)))
+        get("/answer/{uuid}") {
+            // TODO: Authentication / recognize user -> For now only one user w/o authentication
+            // Get dates from DB
+            val rawUuid = call.parameters["uuid"]
+            val uuid = UUID.fromString(rawUuid)
+            val content = databaseService.getDatesByDoodleId(uuid).map { it.doodleDate }
+            // Build helper map
+            val data = "data" to mapOf("pickableDates" to mapOf("content" to content), "uuid" to rawUuid)
+            call.respond(MustacheContent("frontend.hbs", mapOf("config" to DoodleConfig.ANSWER, data)))
         }
 
         /** Accepts edits to the answers of a Doodle */
-        post("/edit") {
+        post("/answer/{uuid}") {
+            val rawUuid = call.parameters["uuid"]
+            val uuid = UUID.fromString(rawUuid)
+            val answeredDatesRaw: List<String> = call.receive()
+            val answeredDates = answeredDatesRaw.map { LocalDate.parse(it, inputFormatter) }
             call.respond(HttpStatusCode.OK)
         }
 
