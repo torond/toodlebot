@@ -63,7 +63,8 @@
         disableMobile: "true",
         static: true, //necessary?
         mode: "multiple",
-        {{#data.pickedDates}}defaultDate: [{{#content}}"{{.}}", {{/content}}]{{/data.pickedDates}}
+        {{#data.pickedDates}}defaultDate: [{{#content}}"{{.}}", {{/content}}],{{/data.pickedDates}}
+        {{#data.pickableDates}}enable: [{{#content}}"{{.}}", {{/content}}],{{/data.pickableDates}}
     });
 
     function formatDate(date) {
@@ -73,7 +74,7 @@
     }
 
     xhr = new XMLHttpRequest();
-    xhr.open('POST', '{{config.confirmRecipientUrl}}');
+    xhr.open('POST', '{{config.confirmRecipientUrl}}{{#data.uuid}}/{{data.uuid}}{{/data.uuid}}');
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.onload = function () {
         if (xhr.status !== 200) {

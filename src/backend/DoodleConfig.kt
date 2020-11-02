@@ -6,7 +6,7 @@ enum class DoodleConfig(
         val calendarIsEditable: Boolean,
         val confirmRecipientUrl: String) {
     SETUP("Pick dates to add to the Doodle.", true, true, "/setup"),
-    EDIT("Choose dates you can attend to.", true, true, "/edit"),
+    ANSWER("Choose dates you can attend to.", true, true, "/answer"),
     CLOSE("Select final dates.", true, true, "/close"),
     VIEW("These dates have been selected.", false, false, "/view")
 }
