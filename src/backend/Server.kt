@@ -2,6 +2,8 @@ package io.doodlebot.backend
 
 import com.github.mustachejava.DefaultMustacheFactory
 import io.doodlebot.backend.model.NewDoodleInfo
+import io.doodlebot.backend.model.NewParticipant
+import io.doodlebot.backend.model.Participant
 import io.doodlebot.backend.service.DatabaseFactory
 import io.doodlebot.backend.service.DatabaseService
 import io.ktor.application.*
@@ -12,6 +14,7 @@ import io.ktor.mustache.*
 import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
+import org.jetbrains.exposed.dao.id.EntityID
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.*
@@ -36,7 +39,6 @@ fun Application.module(testing: Boolean = false) {
     val databaseService = DatabaseService()
 
     val inputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-    val outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
     routing {
         /** Endpoint for setting up and editing the initial dates of a Doodle */
@@ -45,6 +47,7 @@ fun Application.module(testing: Boolean = false) {
         }
 
         get("/setup/{uuid}") {
+            // TODO: When admin removes dates, also remove corresponding participant answers
             // Get dates from DB
             val rawUuid = call.parameters["uuid"]
             val uuid = UUID.fromString(rawUuid)
@@ -65,6 +68,7 @@ fun Application.module(testing: Boolean = false) {
         /** Endpoint for answering and editing the answers of a Doodle */
         get("/answer/{uuid}") {
             // TODO: Authentication / recognize user -> For now only one user w/o authentication
+            // TODO: This also needs to show already chosen dates, i.e. editing must be possible (auth first and retrieve answers if any)
             // Get dates from DB
             val rawUuid = call.parameters["uuid"]
             val uuid = UUID.fromString(rawUuid)
@@ -76,10 +80,24 @@ fun Application.module(testing: Boolean = false) {
 
         /** Accepts edits to the answers of a Doodle */
         post("/answer/{uuid}") {
+            // TODO: This also needs to accept edits on answers
             val rawUuid = call.parameters["uuid"]
             val uuid = UUID.fromString(rawUuid)
+            val pickableDates = databaseService.getDatesByDoodleId(uuid)
+
             val answeredDatesRaw: List<String> = call.receive()
             val answeredDates = answeredDatesRaw.map { LocalDate.parse(it, inputFormatter) }
+
+            // TODO: Check if pickableDates containsAll answeredDates
+            // Find answeredDateIds
+            val answeredDateIds = databaseService.getDateIdsByDates(answeredDates)
+
+            val participant = NewParticipant("torond")  // TODO: Implement auth, to use real data
+            val participantId = databaseService.addParticipantIfNotExisting(participant)
+
+            // Add Participations
+            databaseService.addParticipations(uuid, participantId, answeredDateIds)
+
             call.respond(HttpStatusCode.OK)
         }
 
