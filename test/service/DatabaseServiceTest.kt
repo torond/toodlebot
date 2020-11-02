@@ -76,8 +76,8 @@ class DatabaseServiceTest {
         val savedDoodleId = databaseService.addDoodleWithDates(doodleInfo, dates)
 
         //then
-        val retrievedDates = databaseService.getDatesByDoodleId(savedDoodleId)?.map { it.doodleDate }
-        assertTrue(dates.size == retrievedDates?.size
+        val retrievedDates = databaseService.getDatesByDoodleId(savedDoodleId).map { it.doodleDate }
+        assertTrue(dates.size == retrievedDates.size
                 && dates.containsAll(retrievedDates)
                 && retrievedDates.containsAll(dates))
 
@@ -97,8 +97,8 @@ class DatabaseServiceTest {
         databaseService.updateDoodleWithDates(savedDoodleId, newDates)
 
         //Then
-        val retrievedDates = databaseService.getDatesByDoodleId(savedDoodleId)?.map { it.doodleDate }
-        assertTrue(newDates.size == retrievedDates?.size
+        val retrievedDates = databaseService.getDatesByDoodleId(savedDoodleId).map { it.doodleDate }
+        assertTrue(newDates.size == retrievedDates.size
                 && newDates.containsAll(retrievedDates)
                 && retrievedDates.containsAll(newDates))
     }

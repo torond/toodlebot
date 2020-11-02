@@ -30,6 +30,7 @@ fun main() {
 fun Application.module(testing: Boolean = false) {
     install(Mustache) { mustacheFactory = DefaultMustacheFactory("templates") }
     install(ContentNegotiation) { gson {} }
+    //install(StatusPages) {}
 
     DatabaseFactory.init()
     val databaseService = DatabaseService()
@@ -40,8 +41,17 @@ fun Application.module(testing: Boolean = false) {
     routing {
         /** Endpoint for setting up and editing the initial dates of a Doodle */
         get("/setup") {
-            // TODO: Generate Crypto URL and redirect
             call.respond(MustacheContent("frontend.hbs", mapOf("config" to DoodleConfig.SETUP)))
+        }
+
+        get("/setup/{uuid}") {
+            // Get dates from DB
+            val rawUuid = call.parameters["uuid"]
+            val uuid = UUID.fromString(rawUuid)
+            val content = databaseService.getDatesByDoodleId(uuid).map { it.doodleDate }
+            // Build helper map
+            val data = "data" to mapOf("pickedDates" to mapOf("content" to content))
+            call.respond(MustacheContent("frontend.hbs", mapOf("config" to DoodleConfig.SETUP, data)))
         }
 
         /** Accepts setup dates for the Doodle */
@@ -49,8 +59,7 @@ fun Application.module(testing: Boolean = false) {
             val pickedDatesRaw: List<String> = call.receive()
             val pickedDates = pickedDatesRaw.map { LocalDate.parse(it, inputFormatter) }
             val createdDoodleId = databaseService.addDoodleWithDates(NewDoodleInfo(), pickedDates)
-            //val temp2 = databaseService.getDatesByDoodleId(createdDoodleInfo.id)
-            call.respond(HttpStatusCode.OK)
+            call.respond(HttpStatusCode.OK, createdDoodleId)
         }
 
         /** Endpoint for answering and editing the answers of a Doodle */

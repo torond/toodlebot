@@ -79,17 +79,18 @@ class DatabaseService {
         return doodleId.value
     }
 
-    suspend fun getDatesByDoodleId(id: UUID): List<DoodleDate>? = dbQuery {
+    // This should not return List<DoodleDate>? but List<DoodleDate?> (A list that may be empty)
+    suspend fun getDatesByDoodleId(id: UUID): List<DoodleDate> = dbQuery {
         (DoodleInfos crossJoin InfoJoinDate crossJoin DoodleDates).select {
             (DoodleInfos.id eq id) and (DoodleInfos.id eq InfoJoinDate.doodleInfo) and (DoodleDates.id eq InfoJoinDate.doodleDate)
-        }.map { toDoodleDate(it) }
+        }.map { toDoodleDate(it) }.ifEmpty { emptyList() }
     }
 
     // Should the return type be optional?
     suspend fun getDateIdsByDoodleId(id: UUID): List<EntityID<Int>> = dbQuery {
         (DoodleInfos crossJoin InfoJoinDate crossJoin DoodleDates).select {
             (DoodleInfos.id eq id) and (DoodleInfos.id eq InfoJoinDate.doodleInfo) and (DoodleDates.id eq InfoJoinDate.doodleDate)
-        }.map { it[DoodleDates.id] }
+        }.map { it[DoodleDates.id] }.ifEmpty { emptyList() }
     }
 
     suspend fun updateDoodleWithDates(id: UUID, dates: List<LocalDate>) {

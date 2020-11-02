@@ -63,13 +63,12 @@
         disableMobile: "true",
         static: true, //necessary?
         mode: "multiple",
-        {{#data.pickedDates}}defaultDate: data.pickedDates,{{/data.pickedDates}}
-        {{#data.pickableDates}}enable: data.pickableDates,{{/data.pickableDates}}
+        {{#data.pickedDates}}defaultDate: [{{#content}}"{{.}}", {{/content}}]{{/data.pickedDates}}
     });
 
     function formatDate(date) {
         return date.getFullYear() + '-'
-                + ('0' + date.getMonth()).slice(-2) + '-'
+                + ('0' + (date.getMonth() + 1)).slice(-2) + '-'
                 + ('0' + date.getDate()).slice(-2)
     }
 
