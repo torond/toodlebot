@@ -11,7 +11,8 @@ class DatabaseService {
 
     suspend fun addDoodle(doodle: NewDoodleInfo): EntityID<UUID> = dbQuery {
         DoodleInfos.insertAndGetId {
-            it[numberOfParticipants] = doodle.numberOfParticipants
+            it[isClosed] = doodle.isClosed
+            it[numberOfParticipants]  = doodle.numberOfParticipants
         }
     }
 
@@ -19,6 +20,12 @@ class DatabaseService {
         DoodleInfos.select {
             DoodleInfos.id eq id
         }.mapNotNull { toDoodleInfo(it) }.singleOrNull()
+    }
+
+    suspend fun getDoodleByUuid(id: UUID): DoodleInfo = dbQuery {
+        DoodleInfos.select {
+            DoodleInfos.id eq id
+        }.mapNotNull { toDoodleInfo(it) }.single() // TODO: Throws 500 if Doodle does not exist
     }
 
     suspend fun addDates(dates: List<LocalDate>): List<EntityID<Int>> = dbQuery {
@@ -57,6 +64,7 @@ class DatabaseService {
         InfoJoinDate.batchInsert(dateIds) {
             this[InfoJoinDate.doodleDate] = it
             this[InfoJoinDate.doodleInfo] = infoId
+            this[InfoJoinDate.isFinal] = Op.FALSE
         }
     }
 
@@ -69,6 +77,7 @@ class DatabaseService {
             InfoJoinDate.batchInsert(toBeAdded) {
                 this[InfoJoinDate.doodleDate] = it
                 this[InfoJoinDate.doodleInfo] = infoId
+                this[InfoJoinDate.isFinal] = Op.FALSE
             }
         }
     }
@@ -85,6 +94,12 @@ class DatabaseService {
     suspend fun getDatesByDoodleId(id: UUID): List<DoodleDate> = dbQuery {
         (DoodleInfos crossJoin InfoJoinDate crossJoin DoodleDates).select {
             (DoodleInfos.id eq id) and (DoodleInfos.id eq InfoJoinDate.doodleInfo) and (DoodleDates.id eq InfoJoinDate.doodleDate)
+        }.map { toDoodleDate(it) }.ifEmpty { emptyList() }
+    }
+
+    suspend fun getFinalDatesByDoodleId(id: UUID): List<DoodleDate> = dbQuery {
+        (DoodleInfos crossJoin InfoJoinDate crossJoin DoodleDates).select {
+            (DoodleInfos.id eq id) and (DoodleInfos.id eq InfoJoinDate.doodleInfo) and (DoodleDates.id eq InfoJoinDate.doodleDate) and (InfoJoinDate.isFinal eq Op.TRUE)
         }.map { toDoodleDate(it) }.ifEmpty { emptyList() }
     }
 
@@ -119,11 +134,21 @@ class DatabaseService {
         }
     }
 
-    suspend fun addParticipations(doodleId: UUID, participantId: EntityID<Int>, dateIds: List<EntityID<Int>>)  = dbQuery {
-        Participations.batchInsert(dateIds) {
-            this[Participations.doodleDate] = it
-            this[Participations.doodleInfo] = doodleId
-            this[Participations.participant] = participantId
+    suspend fun addParticipations(doodleId: UUID, participantId: EntityID<Int>, dateIds: List<EntityID<Int>>) {
+        dbQuery {
+            Participations.batchInsert(dateIds) {
+                this[Participations.doodleDate] = it
+                this[Participations.doodleInfo] = doodleId
+                this[Participations.participant] = participantId
+            }
+        }
+        // TODO: Check if below is ok (ok, if participant is new to this Doodle)
+        dbQuery {
+            DoodleInfos.update({DoodleInfos.id eq doodleId}) {
+                with(SqlExpressionBuilder) {
+                    it[DoodleInfos.numberOfParticipants] = DoodleInfos.numberOfParticipants + 1
+                }
+            }
         }
     }
 
@@ -139,9 +164,33 @@ class DatabaseService {
         }.map { toParticipant(it) }.ifEmpty { emptyList() }
     }
 
+    /** Returns a list of dates with corresponding participant IDs, does not add dates with no participants */
+    suspend fun getParticipationsMap(id: UUID): Map<LocalDate, List<EntityID<Int>>> = dbQuery {
+        (DoodleInfos crossJoin Participations crossJoin DoodleDates).select {
+            (DoodleInfos.id eq id) and (DoodleInfos.id eq Participations.doodleInfo) and (DoodleDates.id eq Participations.doodleDate)
+        }.groupBy({it[DoodleDates.doodleDate]}, {it[Participations.participant]})
+    }
+
+    suspend fun markDatesAsFinal(id: UUID, dateIds: List<EntityID<Int>>) {
+        for (dateId in dateIds) {
+            dbQuery {
+                InfoJoinDate.update({(InfoJoinDate.doodleInfo eq id) and (InfoJoinDate.doodleDate eq dateId)}) {
+                    it[InfoJoinDate.isFinal] = Op.TRUE
+                }
+            }
+        }
+    }
+
+    suspend fun markDoodleAsClosed(id: UUID) = dbQuery {
+        DoodleInfos.update({DoodleInfos.id eq id}) {
+            it[DoodleInfos.isClosed] = Op.TRUE
+        }
+    }
+
     private fun toDoodleInfo (row: ResultRow): DoodleInfo =
         DoodleInfo(
             id = row[DoodleInfos.id].value,
+            isClosed = row[DoodleInfos.isClosed],
             numberOfParticipants = row[DoodleInfos.numberOfParticipants]
         )
 
@@ -156,5 +205,4 @@ class DatabaseService {
             id = row[Participants.id].value,
             name = row[Participants.name]
         )
-
 }

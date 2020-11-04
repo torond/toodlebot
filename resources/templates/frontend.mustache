@@ -38,6 +38,27 @@
         .flatpickr-day {
             max-width: var(--custom-width-day);
         }
+
+        .final {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 150px;
+            bottom: 3px;
+            left: calc(50% - 5px);
+            display: block;
+            background: green;
+        }
+
+        .final.no {
+            background: indianred;
+        }
+
+        .test {
+            position: absolute;
+            right: 5px;
+            bottom: 5px;
+        }
     </style>
 </head>
 <body>
@@ -47,7 +68,7 @@
 <p>{{config.description}}</p>
 
 {{#data.numberOfParticipants}}
-    <p>data.numberOfParticipants participants so far.</p>
+    <p>{{data.numberOfParticipants}} participants so far.</p>
 {{/data.numberOfParticipants}}
 
 <div class="custom-btn-holder">
@@ -58,20 +79,52 @@
 </div>
 
 <script>
-    const fp = flatpickr("#pkr", {
-        inline: true,
-        disableMobile: "true",
-        static: true, //necessary?
-        mode: "multiple",
-        {{#data.pickedDates}}defaultDate: [{{#content}}"{{.}}", {{/content}}],{{/data.pickedDates}}
-        {{#data.pickableDates}}enable: [{{#content}}"{{.}}", {{/content}}],{{/data.pickableDates}}
-    });
+    {{#data.numberOfParticipants}}
+        const numberOfParticipants = {{data.numberOfParticipants}};
+    {{/data.numberOfParticipants}}
+
+    {{#data.participationsMap}}
+        const participationsMap = { {{#content}}"{{key}}": {{value}}, {{/content}} };
+    {{/data.participationsMap}}
+
+    {{#data.finalDates}}
+        const finalDates = [{{#content}}"{{.}}", {{/content}}];
+    {{/data.finalDates}}
+
+    /*function getNumberOfParticipants(date) {
+        return participationsMap[date.format]
+    }*/
 
     function formatDate(date) {
         return date.getFullYear() + '-'
                 + ('0' + (date.getMonth() + 1)).slice(-2) + '-'
-                + ('0' + date.getDate()).slice(-2)
+                + ('0' + date.getDate()).slice(-2);
     }
+
+    const fp = flatpickr("#pkr", {
+        inline: true,
+        disableMobile: "true",
+        static: true, //necessary?
+        mode: "multiple",onDayCreate: function(dObj, dStr, fp, dayElem){
+            var formattedDate = formatDate(dayElem.dateObj)
+            {{#data.participationsMap}}
+                participantsToday = participationsMap[formattedDate];
+                if (participantsToday != null) {
+                    console.log(participantsToday)
+                    dayElem.innerHTML += "<span class='test'>" + participantsToday.length.toString() + "/{{data.numberOfParticipants}}</span>";
+                }
+            {{/data.participationsMap}}
+            {{#data.finalDates}}
+                if (finalDates.includes(formattedDate)) {
+                    dayElem.innerHTML += "<span class='final'></span>"
+                }
+            {{/data.finalDates}}
+        },
+        {{#data.pickedDates}}defaultDate: [{{#content}}"{{.}}", {{/content}}],{{/data.pickedDates}}
+        {{#data.pickableDates}}enable: [{{#content}}"{{.}}", {{/content}}],{{/data.pickableDates}}
+    });
+
+
 
     xhr = new XMLHttpRequest();
     xhr.open('POST', '{{config.confirmRecipientUrl}}{{#data.uuid}}/{{data.uuid}}{{/data.uuid}}');

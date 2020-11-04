@@ -4,6 +4,7 @@ import com.github.mustachejava.DefaultMustacheFactory
 import io.doodlebot.backend.model.NewDoodleInfo
 import io.doodlebot.backend.model.NewParticipant
 import io.doodlebot.backend.model.Participant
+import io.doodlebot.backend.model.Participation
 import io.doodlebot.backend.service.DatabaseFactory
 import io.doodlebot.backend.service.DatabaseService
 import io.ktor.application.*
@@ -16,6 +17,7 @@ import io.ktor.response.*
 import io.ktor.routing.*
 import org.jetbrains.exposed.dao.id.EntityID
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.*
 
@@ -43,7 +45,7 @@ fun Application.module(testing: Boolean = false) {
     routing {
         /** Endpoint for setting up and editing the initial dates of a Doodle */
         get("/setup") {
-            call.respond(MustacheContent("frontend.hbs", mapOf("config" to DoodleConfig.SETUP)))
+            call.respond(MustacheContent("frontend.mustache", mapOf("config" to DoodleConfig.SETUP)))
         }
 
         get("/setup/{uuid}") {
@@ -54,7 +56,7 @@ fun Application.module(testing: Boolean = false) {
             val content = databaseService.getDatesByDoodleId(uuid).map { it.doodleDate }
             // Build helper map
             val data = "data" to mapOf("pickedDates" to mapOf("content" to content))
-            call.respond(MustacheContent("frontend.hbs", mapOf("config" to DoodleConfig.SETUP, data)))
+            call.respond(MustacheContent("frontend.mustache", mapOf("config" to DoodleConfig.SETUP, data)))
         }
 
         /** Accepts setup dates for the Doodle */
@@ -69,18 +71,19 @@ fun Application.module(testing: Boolean = false) {
         get("/answer/{uuid}") {
             // TODO: Authentication / recognize user -> For now only one user w/o authentication
             // TODO: This also needs to show already chosen dates, i.e. editing must be possible (auth first and retrieve answers if any)
+            // TODO: Get Participations (of all users) and show them in the calendar
+            // -> databaseService.getParticipationsOrEmptyList(uuid, participantId) -> Give this list to the Mustache Template
             // Get dates from DB
             val rawUuid = call.parameters["uuid"]
             val uuid = UUID.fromString(rawUuid)
             val content = databaseService.getDatesByDoodleId(uuid).map { it.doodleDate }
             // Build helper map
             val data = "data" to mapOf("pickableDates" to mapOf("content" to content), "uuid" to rawUuid)
-            call.respond(MustacheContent("frontend.hbs", mapOf("config" to DoodleConfig.ANSWER, data)))
+            call.respond(MustacheContent("frontend.mustache", mapOf("config" to DoodleConfig.ANSWER, data)))
         }
 
         /** Accepts edits to the answers of a Doodle */
         post("/answer/{uuid}") {
-            // TODO: This also needs to accept edits on answers
             val rawUuid = call.parameters["uuid"]
             val uuid = UUID.fromString(rawUuid)
             val pickableDates = databaseService.getDatesByDoodleId(uuid)
@@ -92,28 +95,67 @@ fun Application.module(testing: Boolean = false) {
             // Find answeredDateIds
             val answeredDateIds = databaseService.getDateIdsByDates(answeredDates)
 
-            val participant = NewParticipant("torond")  // TODO: Implement auth, to use real data
+            val participant = NewParticipant(LocalTime.now().toString())  // TODO: Implement auth, to use real data
             val participantId = databaseService.addParticipantIfNotExisting(participant)
 
             // Add Participations
+            // TODO: This also needs to accept edits on answers
+            // -> databaseService.updateParticipations(uuid, participantId, answeredDateIds)
             databaseService.addParticipations(uuid, participantId, answeredDateIds)
 
             call.respond(HttpStatusCode.OK)
         }
 
         /** Endpoint for closing a Doodle */
-        get("/close") {
-            call.respond(MustacheContent("frontend.hbs", mapOf("config" to DoodleConfig.CLOSE)))
+        get("/close/{uuid}") {
+            // Needs: pickableDates, Participations
+            val rawUuid = call.parameters["uuid"]
+            val uuid = UUID.fromString(rawUuid)
+            val content = databaseService.getDatesByDoodleId(uuid).map { it.doodleDate }
+            val participationsMap = databaseService.getParticipationsMap(uuid)
+            val numberOfParticipants = databaseService.getDoodleByUuid(uuid).numberOfParticipants
+            // TODO: Get Participations (of all users) and show them in the calendar, maybe mark best dates
+            val data = "data" to mapOf("pickableDates" to mapOf("content" to content),
+                    "uuid" to rawUuid,
+                    "numberOfParticipants" to numberOfParticipants,
+                    "participationsMap" to mapOf("content" to participationsMap.entries))
+            println(data)
+            call.respond(MustacheContent("frontend.mustache", mapOf("config" to DoodleConfig.CLOSE, data)))
         }
 
         /** Accepts final dates of a Doodle*/
-        post("/close") {
-            call.respond(HttpStatusCode.OK)
+        post("/close/{uuid}") {
+            val rawUuid = call.parameters["uuid"]
+            val uuid = UUID.fromString(rawUuid)
+            val pickedDatesRaw: List<String> = call.receive()
+            val pickedDates = pickedDatesRaw.map { LocalDate.parse(it, inputFormatter) }
+            // Mark final dates
+            val dateIds = databaseService.getDateIdsByDates(pickedDates)
+            databaseService.markDatesAsFinal(uuid, dateIds)
+            // Set Doodle state to closed
+            databaseService.markDoodleAsClosed(uuid)
+
+            // Redirect admin to /view/{uuid}
+            call.respondRedirect("/view/${rawUuid}")
+            //call.respond(HttpStatusCode.OK)
         }
 
         /** Endpoint for viewing the results of a Doodle*/
-        get("/view") {
-            call.respond(MustacheContent("frontend.hbs", mapOf("config" to DoodleConfig.VIEW)))
+        get("/view/{uuid}") {
+            val rawUuid = call.parameters["uuid"]
+            val uuid = UUID.fromString(rawUuid)
+            val content = databaseService.getDatesByDoodleId(uuid).map { it.doodleDate }
+            val participationsMap = databaseService.getParticipationsMap(uuid)
+            val numberOfParticipants = databaseService.getDoodleByUuid(uuid).numberOfParticipants
+            // TODO: Check if Doodle is closed
+            val pickableDates = databaseService.getDatesByDoodleId(uuid)
+            val finalDates = databaseService.getFinalDatesByDoodleId(uuid).map { it.doodleDate }
+            val data = "data" to mapOf("pickableDates" to mapOf("content" to content),
+                    "uuid" to rawUuid,
+                    "numberOfParticipants" to numberOfParticipants,
+                    "participationsMap" to mapOf("content" to participationsMap.entries),
+                    "finalDates" to mapOf("content" to finalDates))
+            call.respond(MustacheContent("frontend.mustache", mapOf("config" to DoodleConfig.VIEW, data)))
         }
     }
 }
