@@ -8,3 +8,9 @@ object Participations: Table() {
     val participant = reference("participant", Participants)
     override val primaryKey = PrimaryKey(doodleInfo, doodleDate, participant)
 }
+
+data class Participation(
+    val doodleInfo: DoodleInfo,
+    val doodleDate: DoodleDate,
+    val participant: Participant
+)
