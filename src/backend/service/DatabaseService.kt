@@ -165,7 +165,7 @@ class DatabaseService {
     }
 
     /** Returns a list of dates with corresponding participant IDs, does not add dates with no participants */
-    suspend fun getParticipationsMap(id: UUID): Map<LocalDate, List<EntityID<Int>>> = dbQuery {
+    suspend fun getParticipations(id: UUID): Map<LocalDate, List<EntityID<Int>>> = dbQuery {
         (DoodleInfos crossJoin Participations crossJoin DoodleDates).select {
             (DoodleInfos.id eq id) and (DoodleInfos.id eq Participations.doodleInfo) and (DoodleDates.id eq Participations.doodleDate)
         }.groupBy({it[DoodleDates.doodleDate]}, {it[Participations.participant]})
