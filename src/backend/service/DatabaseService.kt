@@ -9,10 +9,11 @@ import java.util.*
 
 class DatabaseService {
 
-    suspend fun addDoodle(doodle: NewDoodleInfo): EntityID<UUID> = dbQuery {
+    // TODO: Add adminId support
+    suspend fun createDoodle(): EntityID<UUID> = dbQuery {
         DoodleInfos.insertAndGetId {
-            it[isClosed] = doodle.isClosed
-            it[numberOfParticipants]  = doodle.numberOfParticipants
+            it[isClosed] = Op.FALSE
+            it[numberOfParticipants]  = 0
         }
     }
 
@@ -22,7 +23,7 @@ class DatabaseService {
         }.mapNotNull { toDoodleInfo(it) }.singleOrNull()
     }
 
-    suspend fun getDoodleByUuid(id: UUID): DoodleInfo = dbQuery {
+    suspend fun getDoodleById(id: UUID): DoodleInfo = dbQuery {
         DoodleInfos.select {
             DoodleInfos.id eq id
         }.mapNotNull { toDoodleInfo(it) }.single() // TODO: Throws 500 if Doodle does not exist
@@ -41,7 +42,7 @@ class DatabaseService {
     }
 
     suspend fun addDatesIfNotExisting(dates: List<LocalDate>): List<EntityID<Int>> {
-        var l: MutableList<EntityID<Int>> = mutableListOf()
+        val l: MutableList<EntityID<Int>> = mutableListOf()
         for (date in dates) {
             val insertedId = dbQuery {
                 DoodleDates.insertIgnoreAndGetId { it[doodleDate] = date }
@@ -69,7 +70,7 @@ class DatabaseService {
     }
 
     suspend fun updateInfoJoinDate(infoId: UUID, newDateIds: List<EntityID<Int>>) {
-        val oldDateIds = getDateIdsByDoodleId(infoId)
+        val oldDateIds = getProposedDateIdsByDoodleId(infoId)
         val toBeDeleted = oldDateIds.minus(newDateIds)
         val toBeAdded = newDateIds.minus(oldDateIds)
         dbQuery {
@@ -82,8 +83,8 @@ class DatabaseService {
         }
     }
 
-    suspend fun addDoodleWithDates(doodle: NewDoodleInfo, dates: List<LocalDate>): UUID {
-        val doodleId = addDoodle(doodle)
+    suspend fun createDoodleFromDates(dates: List<LocalDate>): UUID {
+        val doodleId = createDoodle()
         val dateIds = addDatesIfNotExisting(dates)
         addInfoJoinDate(doodleId, dateIds)
 
@@ -91,7 +92,8 @@ class DatabaseService {
     }
 
     // This should not return List<DoodleDate>? but List<DoodleDate?> (A list that may be empty)
-    suspend fun getDatesByDoodleId(id: UUID): List<DoodleDate> = dbQuery {
+    // getProposedDates
+    suspend fun getProposedDatesByDoodleId(id: UUID): List<DoodleDate> = dbQuery {
         (DoodleInfos crossJoin InfoJoinDate crossJoin DoodleDates).select {
             (DoodleInfos.id eq id) and (DoodleInfos.id eq InfoJoinDate.doodleInfo) and (DoodleDates.id eq InfoJoinDate.doodleDate)
         }.map { toDoodleDate(it) }.ifEmpty { emptyList() }
@@ -104,7 +106,7 @@ class DatabaseService {
     }
 
     // Should the return type be optional?
-    suspend fun getDateIdsByDoodleId(id: UUID): List<EntityID<Int>> = dbQuery {
+    suspend fun getProposedDateIdsByDoodleId(id: UUID): List<EntityID<Int>> = dbQuery {
         (DoodleInfos crossJoin InfoJoinDate crossJoin DoodleDates).select {
             (DoodleInfos.id eq id) and (DoodleInfos.id eq InfoJoinDate.doodleInfo) and (DoodleDates.id eq InfoJoinDate.doodleDate)
         }.map { it[DoodleDates.id] }.ifEmpty { emptyList() }
@@ -116,13 +118,16 @@ class DatabaseService {
         updateInfoJoinDate(id, dateIds)
     }
 
-    suspend fun addParticipantIfNotExisting(participant: NewParticipant): EntityID<Int> = dbQuery {
+    suspend fun addParticipantIfNotExisting(participant: NewParticipant): Participant {
+        val id = dbQuery {
             Participants.insertIgnoreAndGetId { it[name] = participant.name }
         } ?: dbQuery {
             Participants.select { (Participants.name eq participant.name) }
                     .map { row -> row[Participants.id] }
                     .single()
         }
+        return getParticipant(id)!!
+    }
 
     suspend fun getDateIdsByDates(dates: List<LocalDate>): List<EntityID<Int>> {
         return dates.map {
@@ -134,12 +139,13 @@ class DatabaseService {
         }
     }
 
-    suspend fun addParticipations(doodleId: UUID, participantId: EntityID<Int>, dateIds: List<EntityID<Int>>) {
+    suspend fun addParticipations(doodleId: UUID, participant: Participant, dates: List<LocalDate>) {
+        val dateIds = getDateIdsByDates(dates)
         dbQuery {
             Participations.batchInsert(dateIds) {
                 this[Participations.doodleDate] = it
                 this[Participations.doodleInfo] = doodleId
-                this[Participations.participant] = participantId
+                this[Participations.participant] = participant.id
             }
         }
         // TODO: Check if below is ok (ok, if participant is new to this Doodle)
@@ -165,13 +171,14 @@ class DatabaseService {
     }
 
     /** Returns a list of dates with corresponding participant IDs, does not add dates with no participants */
-    suspend fun getParticipations(id: UUID): Map<LocalDate, List<EntityID<Int>>> = dbQuery {
+    suspend fun getParticipationsByDoodleId(id: UUID): Map<LocalDate, List<EntityID<Int>>> = dbQuery {
         (DoodleInfos crossJoin Participations crossJoin DoodleDates).select {
             (DoodleInfos.id eq id) and (DoodleInfos.id eq Participations.doodleInfo) and (DoodleDates.id eq Participations.doodleDate)
         }.groupBy({it[DoodleDates.doodleDate]}, {it[Participations.participant]})
     }
 
-    suspend fun markDatesAsFinal(id: UUID, dateIds: List<EntityID<Int>>) {
+    suspend fun markDatesAsFinal(id: UUID, dates: List<LocalDate>) {
+        val dateIds = getDateIdsByDates(dates)
         for (dateId in dateIds) {
             dbQuery {
                 InfoJoinDate.update({(InfoJoinDate.doodleInfo eq id) and (InfoJoinDate.doodleDate eq dateId)}) {

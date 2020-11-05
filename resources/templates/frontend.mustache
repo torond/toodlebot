@@ -67,9 +67,9 @@
 <div class="picker" id="pkr"></div>
 <p>{{config.description}}</p>
 
-{{#data.numberOfParticipants}}
-    <p>{{data.numberOfParticipants}} participants so far.</p>
-{{/data.numberOfParticipants}}
+{{#numberOfParticipants}}
+    <p>{{numberOfParticipants}} participants so far.</p>
+{{/numberOfParticipants}}
 
 <div class="custom-btn-holder">
     <button type="button">Cancel</button>
@@ -79,17 +79,17 @@
 </div>
 
 <script>
-    {{#data.numberOfParticipants}}
-        const numberOfParticipants = {{data.numberOfParticipants}};
-    {{/data.numberOfParticipants}}
+    {{#numberOfParticipants}}
+        const numberOfParticipants = {{numberOfParticipants}};
+    {{/numberOfParticipants}}
 
-    {{#data.participations}}
+    {{#participations}}
         const participations = { {{#content}}"{{key}}": {{value}}, {{/content}} };
-    {{/data.participations}}
+    {{/participations}}
 
-    {{#data.finalDates}}
+    {{#finalDates}}
         const finalDates = [{{#content}}"{{.}}", {{/content}}];
-    {{/data.finalDates}}
+    {{/finalDates}}
 
     /*function getNumberOfParticipants(date) {
         return participations[date.format]
@@ -105,29 +105,30 @@
         inline: true,
         disableMobile: "true",
         static: true, //necessary?
-        mode: "multiple",onDayCreate: function(dObj, dStr, fp, dayElem){
+        mode: "multiple",
+        onDayCreate: function(dObj, dStr, fp, dayElem){
             var formattedDate = formatDate(dayElem.dateObj)
-            {{#data.participations}}
+            {{#participations}}
                 participantsToday = participations[formattedDate];
                 if (participantsToday != null) {
                     console.log(participantsToday)
-                    dayElem.innerHTML += "<span class='test'>" + participantsToday.length.toString() + "/{{data.numberOfParticipants}}</span>";
+                    dayElem.innerHTML += "<span class='test'>" + participantsToday.length.toString() + "/{{numberOfParticipants}}</span>";
                 }
-            {{/data.participations}}
-            {{#data.finalDates}}
+            {{/participations}}
+            {{#finalDates}}
                 if (finalDates.includes(formattedDate)) {
                     dayElem.innerHTML += "<span class='final'></span>"
                 }
-            {{/data.finalDates}}
+            {{/finalDates}}
         },
-        {{#data.defaultDates}}defaultDate: [{{#content}}"{{.}}", {{/content}}],{{/data.defaultDates}}
-        {{#data.enabledDates}}enable: [{{#content}}"{{.}}", {{/content}}],{{/data.enabledDates}}
+        {{#defaultDates}}defaultDate: [{{#content}}"{{.}}", {{/content}}],{{/defaultDates}}
+        {{#enabledDates}}enable: [{{#content}}"{{.}}", {{/content}}],{{/enabledDates}}
     });
 
 
 
     xhr = new XMLHttpRequest();
-    xhr.open('POST', '{{config.confirmRecipientUrl}}{{#data.uuid}}/{{data.uuid}}{{/data.uuid}}');
+    xhr.open('POST', '{{config.confirmRecipientUrl}}{{#doodleId}}/{{doodleId}}{{/doodleId}}');
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.onload = function () {
         if (xhr.status !== 200) {

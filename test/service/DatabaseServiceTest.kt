@@ -1,15 +1,13 @@
 package io.doodlebot.service
 
 import io.doodlebot.backend.model.DoodleInfos
-import io.doodlebot.backend.model.NewDoodleInfo
 import io.doodlebot.backend.model.NewParticipant
+import io.doodlebot.backend.model.Participants
 import io.doodlebot.backend.service.DatabaseService
 import kotlin.test.*
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.dao.id.IdTable
 import java.time.LocalDate
-import java.util.*
 
 class DatabaseServiceTest {
     private val databaseService = DatabaseService()
@@ -17,15 +15,13 @@ class DatabaseServiceTest {
     @Test
     fun `Add simple DoodleInfo`() = runBlocking {
         // Given
-        val doodleInfo = NewDoodleInfo()
-
         // When
-        val savedId = databaseService.addDoodle(doodleInfo)
+        val savedId = databaseService.createDoodle()
 
         // Then
         val retrieved = databaseService.getDoodle(savedId)
         assertEquals(retrieved?.id, savedId.value)
-        assertEquals(retrieved?.numberOfParticipants, doodleInfo.numberOfParticipants)
+        assertEquals(retrieved?.numberOfParticipants, 0)
 
         Unit
     }
@@ -70,14 +66,13 @@ class DatabaseServiceTest {
     @Test
     fun `Add Doodle with Dates`() = runBlocking {
         // Given
-        val doodleInfo = NewDoodleInfo()
         val dates = listOf(LocalDate.parse("2019-03-27"), LocalDate.parse("2019-03-28"), LocalDate.parse("2019-03-29"))
 
         // When
-        val savedDoodleId = databaseService.addDoodleWithDates(doodleInfo, dates)
+        val savedDoodleId = databaseService.createDoodleFromDates(dates)
 
         // Then
-        val retrievedDates = databaseService.getDatesByDoodleId(savedDoodleId).map { it.doodleDate }
+        val retrievedDates = databaseService.getProposedDatesByDoodleId(savedDoodleId).map { it.doodleDate }
         assertTrue(dates.size == retrievedDates.size
                 && dates.containsAll(retrievedDates)
                 && retrievedDates.containsAll(dates))
@@ -89,16 +84,15 @@ class DatabaseServiceTest {
     @Test
     fun `Update Dates`() = runBlocking {
         // Given
-        val doodleInfo = NewDoodleInfo()
         val dates = listOf(LocalDate.parse("2018-03-26"), LocalDate.parse("2018-03-27"))
-        val savedDoodleId = databaseService.addDoodleWithDates(doodleInfo, dates)
+        val savedDoodleId = databaseService.createDoodleFromDates(dates)
 
         // When
         val newDates = listOf(LocalDate.parse("2018-03-27"), LocalDate.parse("2018-03-28"), LocalDate.parse("2018-03-29"))
         databaseService.updateDoodleWithDates(savedDoodleId, newDates)
 
         // Then
-        val retrievedDates = databaseService.getDatesByDoodleId(savedDoodleId).map { it.doodleDate }
+        val retrievedDates = databaseService.getProposedDatesByDoodleId(savedDoodleId).map { it.doodleDate }
         assertTrue(newDates.size == retrievedDates.size
                 && newDates.containsAll(retrievedDates)
                 && retrievedDates.containsAll(newDates))
@@ -110,11 +104,11 @@ class DatabaseServiceTest {
         val participant = NewParticipant("a")
 
         // When
-        val savedId = databaseService.addParticipantIfNotExisting(participant)
+        val savedParticipant = databaseService.addParticipantIfNotExisting(participant)
 
         // Then
-        val retrieved = databaseService.getParticipant(savedId)
-        assertEquals(retrieved?.id, savedId.value)
+        val retrieved = databaseService.getParticipant(EntityID(savedParticipant.id, Participants))
+        assertEquals(retrieved?.id, savedParticipant.id)
         assertEquals(retrieved?.name, participant.name)
     }
 
@@ -126,7 +120,6 @@ class DatabaseServiceTest {
     @Test
     fun `Add Doodle with dates and participants`() = runBlocking {
         // Given
-        val doodleInfo = NewDoodleInfo()
         val date1 = LocalDate.parse("2014-03-27")
         val date2 = LocalDate.parse("2014-03-28")
         val date3 = LocalDate.parse("2014-03-29")
@@ -135,19 +128,16 @@ class DatabaseServiceTest {
         val participantC = NewParticipant("c")
 
         // When
-        val savedDoodleId = databaseService.addDoodleWithDates(doodleInfo, listOf(date1, date2, date3))
-        val savedIdA = databaseService.addParticipantIfNotExisting(participantA)
-        val savedIdB = databaseService.addParticipantIfNotExisting(participantB)
-        val savedIdC = databaseService.addParticipantIfNotExisting(participantC)
-        val savedParticipantA = databaseService.getParticipant(savedIdA)
-        val savedParticipantB = databaseService.getParticipant(savedIdB)
-        val savedParticipantC = databaseService.getParticipant(savedIdC)
+        val savedDoodleId = databaseService.createDoodleFromDates(listOf(date1, date2, date3))
+        val savedParticipantA = databaseService.addParticipantIfNotExisting(participantA)
+        val savedParticipantB = databaseService.addParticipantIfNotExisting(participantB)
+        val savedParticipantC = databaseService.addParticipantIfNotExisting(participantC)
         val dateId1 = databaseService.getDateIdByDate(date1)
         val dateId2 = databaseService.getDateIdByDate(date2)
         val dateId3 = databaseService.getDateIdByDate(date3)
-        databaseService.addParticipations(savedDoodleId, savedIdA, listOf(dateId1, dateId2))
-        databaseService.addParticipations(savedDoodleId, savedIdB, listOf(dateId2, dateId3))
-        databaseService.addParticipations(savedDoodleId, savedIdC, listOf(dateId1))
+        databaseService.addParticipations(savedDoodleId, savedParticipantA, listOf(date1, date2))
+        databaseService.addParticipations(savedDoodleId, savedParticipantB, listOf(date2, date3))
+        databaseService.addParticipations(savedDoodleId, savedParticipantC, listOf(date1))
 
         // Then
         val participantsOnDate1 = databaseService.getParticipantsByDoodleAndDate(savedDoodleId, dateId1)
