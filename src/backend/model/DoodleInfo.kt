@@ -13,9 +13,3 @@ data class DoodleInfo(
     val isClosed: Boolean = false,
     val numberOfParticipants: Int = 0
 )
-
-data class NewDoodleInfo(
-    val isClosed: Boolean = false,
-    val numberOfParticipants: Int = 0
-// adminId
-)
