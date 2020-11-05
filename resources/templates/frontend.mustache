@@ -83,16 +83,16 @@
         const numberOfParticipants = {{data.numberOfParticipants}};
     {{/data.numberOfParticipants}}
 
-    {{#data.participationsMap}}
-        const participationsMap = { {{#content}}"{{key}}": {{value}}, {{/content}} };
-    {{/data.participationsMap}}
+    {{#data.participations}}
+        const participations = { {{#content}}"{{key}}": {{value}}, {{/content}} };
+    {{/data.participations}}
 
     {{#data.finalDates}}
         const finalDates = [{{#content}}"{{.}}", {{/content}}];
     {{/data.finalDates}}
 
     /*function getNumberOfParticipants(date) {
-        return participationsMap[date.format]
+        return participations[date.format]
     }*/
 
     function formatDate(date) {
@@ -107,21 +107,21 @@
         static: true, //necessary?
         mode: "multiple",onDayCreate: function(dObj, dStr, fp, dayElem){
             var formattedDate = formatDate(dayElem.dateObj)
-            {{#data.participationsMap}}
-                participantsToday = participationsMap[formattedDate];
+            {{#data.participations}}
+                participantsToday = participations[formattedDate];
                 if (participantsToday != null) {
                     console.log(participantsToday)
                     dayElem.innerHTML += "<span class='test'>" + participantsToday.length.toString() + "/{{data.numberOfParticipants}}</span>";
                 }
-            {{/data.participationsMap}}
+            {{/data.participations}}
             {{#data.finalDates}}
                 if (finalDates.includes(formattedDate)) {
                     dayElem.innerHTML += "<span class='final'></span>"
                 }
             {{/data.finalDates}}
         },
-        {{#data.pickedDates}}defaultDate: [{{#content}}"{{.}}", {{/content}}],{{/data.pickedDates}}
-        {{#data.pickableDates}}enable: [{{#content}}"{{.}}", {{/content}}],{{/data.pickableDates}}
+        {{#data.defaultDates}}defaultDate: [{{#content}}"{{.}}", {{/content}}],{{/data.defaultDates}}
+        {{#data.enabledDates}}enable: [{{#content}}"{{.}}", {{/content}}],{{/data.enabledDates}}
     });
 
 
