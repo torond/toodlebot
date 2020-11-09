@@ -34,16 +34,24 @@ fun main() {
 fun Application.module(testing: Boolean = false) {
     install(Mustache) { mustacheFactory = DefaultMustacheFactory(TEMPLATE_PATH) }
     install(ContentNegotiation) { gson {} }
-    //install(StatusPages) {}
+    /*install(StatusPages) {IllegalArgumentException (from UUID.fromString(),
+            IllegalStateExeption (from checkNotNull),
+            DateTimeParseException (from LocalDate.parse())}
+            ContentTransformationException (from call.receive)*/
 
     DatabaseFactory.init()
     val databaseService = DatabaseService()
-
     val inputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
-    // TODO: Correct Exceptions and Status Code
-    fun ApplicationCall.getUuid(): UUID = UUID.fromString(this.parameters["doodleId"])
-    suspend fun ApplicationCall.getDates(): List<LocalDate> = this.receive<List<String>>().map { LocalDate.parse(it, inputFormatter) }
+    fun ApplicationCall.getUuid(): UUID {
+        checkNotNull(this.parameters["doodleId"]) { "Must provide id" }
+        return UUID.fromString(this.parameters["doodleId"])
+    }
+    suspend fun ApplicationCall.getDates(): List<LocalDate> {
+        val raw = this.receiveOrNull<List<String>>()
+        checkNotNull(raw) { "Must provide dates" }
+        return raw.map { LocalDate.parse(it, inputFormatter) }
+    }
 
 
     //pickableDates by doodleId (dates enabled in the calendar)
@@ -110,7 +118,7 @@ fun Application.module(testing: Boolean = false) {
                              numberOfParticipants: Int? = null,
                              participations: Map<LocalDate, List<EntityID<Int>>>? = null,
                              doodleId: UUID? = null): Map<String, Any> {
-        val mappings: MutableList<Pair<String, Any>> = mutableListOf<Pair<String, Any>>()
+        val mappings: MutableList<Pair<String, Any>> = mutableListOf()
         mappings.add("config" to config)
         if (doodleId != null) mappings.add("doodleId" to doodleId)
         if (enabledDates != null) mappings.add("enabledDates" to mapOf("content" to enabledDates))
@@ -122,6 +130,13 @@ fun Application.module(testing: Boolean = false) {
     }
 
     routing {
+        get("/test/{doodleId}") {
+            val doodleId = call.getUuid()
+            println(databaseService.getProposedDatesByDoodleId(doodleId))
+            call.respond(HttpStatusCode.OK)
+        }
+
+
         /** Endpoint for setting up and editing the initial dates of a Doodle */
         // Clean slate
         get("/setup") {
@@ -131,7 +146,7 @@ fun Application.module(testing: Boolean = false) {
         // Previous data
         get("/setup/{doodleId}") {
             // TODO: When admin removes dates, also remove corresponding participant answers
-            val doodleId: UUID = call.getUuid()
+            val doodleId = call.getUuid()
             val proposedDates = databaseService.getProposedDatesByDoodleId(doodleId).map { it.doodleDate }
             val mustacheMapping = buildMustacheMapping(DoodleConfig.SETUP, defaultDates = proposedDates, doodleId = doodleId)
             call.respond(MustacheContent(TEMPLATE_NAME, mustacheMapping))
@@ -140,16 +155,17 @@ fun Application.module(testing: Boolean = false) {
         /** Accepts setup dates for the Doodle */
         // Accept new data
         post("/setup") {
+            // TODO: At least one date must be selected
             val proposedDates = call.getDates()
-            val doodleId = databaseService.createDoodleFromDates(proposedDates)
-            call.respond(HttpStatusCode.OK, doodleId)
+            val doodle = databaseService.createDoodleFromDates(proposedDates)
+            call.respond(HttpStatusCode.OK, doodle.id)
         }
 
         // Update data
         post("/setup/{doodleId}") {
             val doodleId = call.getUuid()
             val proposedDates = call.getDates()
-            databaseService.updateDoodleWithDates(doodleId, proposedDates)
+            databaseService.updateDatesOfDoodle(doodleId, proposedDates)
             call.respond(HttpStatusCode.OK)
         }
 
@@ -160,7 +176,7 @@ fun Application.module(testing: Boolean = false) {
             // TODO: Authentication / recognize user -> For now only one user w/o authentication
             // TODO: This also needs to show already chosen dates (defaultDates = yesDates), i.e. editing must be possible (auth first and retrieve answers if any)
             // TODO: Get Participations (of all users) and show them in the calendar
-            // -> databaseService.getParticipationsOrEmptyListByDoodleId(doodleId, participantId) -> Give this list to the Mustache Template
+            // -> databaseService.getParticipations(doodleId, participantId) -> Give this list to the Mustache Template
             // Get dates from DB
             val doodleId = call.getUuid()
             val proposedDates = databaseService.getProposedDatesByDoodleId(doodleId).map { it.doodleDate }
@@ -193,7 +209,7 @@ fun Application.module(testing: Boolean = false) {
             val doodleId = call.getUuid()
             val proposedDates = databaseService.getProposedDatesByDoodleId(doodleId).map { it.doodleDate }
             val participations = databaseService.getParticipationsByDoodleId(doodleId)
-            val numberOfParticipants = databaseService.getDoodleById(doodleId).numberOfParticipants
+            val numberOfParticipants = databaseService.getDoodleById(doodleId)?.numberOfParticipants  // TODO: Null check!
             // TODO: Show closed dates to accept for editing? (defaultDates = finalDates)
             val mustacheMapping = buildMustacheMapping(DoodleConfig.CLOSE,
                     enabledDates = proposedDates,
@@ -223,7 +239,7 @@ fun Application.module(testing: Boolean = false) {
             // TODO: Show own chosen Dates? (auth first and retrieve yesDates if any)
             val doodleId = call.getUuid()
             val participations = databaseService.getParticipationsByDoodleId(doodleId)
-            val numberOfParticipants = databaseService.getDoodleById(doodleId).numberOfParticipants
+            val numberOfParticipants = databaseService.getDoodleById(doodleId)?.numberOfParticipants  // TODO: Null check!
             val proposedDates = databaseService.getProposedDatesByDoodleId(doodleId).map { it.doodleDate }
             val finalDates = databaseService.getFinalDatesByDoodleId(doodleId).map { it.doodleDate }
             val mustacheMapping = buildMustacheMapping(DoodleConfig.VIEW,
