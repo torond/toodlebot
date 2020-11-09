@@ -33,6 +33,12 @@ class ApplicationTest {
             }
         }
     }
+
+    /*
+    * `Throw if doodleId is null` / `has wrong format`
+    * `Throw if date list is null` / `dates have wrong format`
+    * -> Basically check if correct Exceptions are thrown as expected or if method works
+    * */
 }
 
 
