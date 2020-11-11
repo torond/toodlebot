@@ -61,7 +61,6 @@ class DatabaseServiceTest {
         //Then
         assertEquals(newParticipant.name, savedParticipant.name)
         for (date in dates) {
-            println(participations[date])
             if (date in yesDates) {
                 assertTrue(participations.getValue(date).contains(EntityID(savedParticipant.id, Participants)))
             } else {

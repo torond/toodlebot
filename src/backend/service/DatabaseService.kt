@@ -69,6 +69,7 @@ class DatabaseService {
         val toBeDeleted = oldDateIds.minus(newDateIds)
         val toBeAdded = newDateIds.minus(oldDateIds)
         dbQuery {
+            checkDoodleIsOpen(doodleId)
             Participations.deleteWhere { (Participations.doodleInfo eq doodleId) and (Participations.doodleDate inList toBeDeleted) }
             InfoJoinDate.deleteWhere { (InfoJoinDate.doodleInfo eq doodleId) and (InfoJoinDate.doodleDate inList toBeDeleted) }
             InfoJoinDate.batchInsert(toBeAdded) {
@@ -85,7 +86,6 @@ class DatabaseService {
      */
     suspend fun getProposedDatesByDoodleId(doodleId: UUID): List<DoodleDate> = dbQuery {
         checkDoodleExists(doodleId)
-        checkDoodleIsOpen(doodleId)
         (DoodleInfos crossJoin InfoJoinDate crossJoin DoodleDates).select {
             (DoodleInfos.id eq doodleId) and (DoodleInfos.id eq InfoJoinDate.doodleInfo) and (DoodleDates.id eq InfoJoinDate.doodleDate)
         }.map { toDoodleDate(it) }
@@ -237,6 +237,14 @@ class DatabaseService {
         if (DoodleInfos.select { DoodleInfos.id eq doodleId }.map { it[DoodleInfos.isClosed] }.single()) {
             throw IllegalStateException("Doodle with id $doodleId is closed and cannot be changed")
         }
+    }
+
+    /**
+     * Returns true iff Doodle corresponding to [doodleId] is marked isClosed.
+     */
+    suspend fun doodleIsClosed(doodleId: UUID): Boolean = dbQuery {
+        checkDoodleExists(doodleId)
+        DoodleInfos.select { DoodleInfos.id eq doodleId }.map { it[DoodleInfos.isClosed] }.single()
     }
 
     /**
