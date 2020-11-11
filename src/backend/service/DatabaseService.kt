@@ -2,6 +2,7 @@ package io.doodlebot.backend.service
 
 import io.doodlebot.backend.model.*
 import io.doodlebot.backend.service.DatabaseFactory.dbQuery
+import io.ktor.features.*
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.*
 import java.time.LocalDate
@@ -35,10 +36,10 @@ class DatabaseService {
     /**
      * Returns the [DoodleInfo] corresponding to the given [doodleId].
      */
-    suspend fun getDoodleById(doodleId: UUID): DoodleInfo? = dbQuery {
+    suspend fun getDoodleById(doodleId: UUID): DoodleInfo = dbQuery {
         DoodleInfos.select {
             DoodleInfos.id eq doodleId
-        }.mapNotNull { toDoodleInfo(it) }.singleOrNull() // TODO: Throws 500 if Doodle does not exist
+        }.mapNotNull { toDoodleInfo(it) }.singleOrNull() ?: throw NotFoundException("DoodleInfo with id $doodleId not found")
     }
 
     /**
@@ -79,20 +80,23 @@ class DatabaseService {
 
     /**
      * Returns the proposed [DoodleDate]s of the Doodle corresponding to [doodleId].
+     * If the list is empty, there is no Doodle with this Throws a [NotFoundException] if an
      */
     suspend fun getProposedDatesByDoodleId(doodleId: UUID): List<DoodleDate> = dbQuery {
+        if (doodleDoesNotExist(doodleId)) throw NotFoundException("DoodleInfo with id $doodleId not found")
         (DoodleInfos crossJoin InfoJoinDate crossJoin DoodleDates).select {
             (DoodleInfos.id eq doodleId) and (DoodleInfos.id eq InfoJoinDate.doodleInfo) and (DoodleDates.id eq InfoJoinDate.doodleDate)
-        }.map { toDoodleDate(it) }.ifEmpty { emptyList() }
+        }.map { toDoodleDate(it) }
     }
 
     /**
      * Returns the final [DoodleDate]s of the Doodle corresponding to [doodleId].
      */
     suspend fun getFinalDatesByDoodleId(doodleId: UUID): List<DoodleDate> = dbQuery {
+        if (doodleDoesNotExist(doodleId)) throw NotFoundException("DoodleInfo with id $doodleId not found")
         (DoodleInfos crossJoin InfoJoinDate crossJoin DoodleDates).select {
             (DoodleInfos.id eq doodleId) and (DoodleInfos.id eq InfoJoinDate.doodleInfo) and (DoodleDates.id eq InfoJoinDate.doodleDate) and (InfoJoinDate.isFinal eq Op.TRUE)
-        }.map { toDoodleDate(it) }.ifEmpty { emptyList() }
+        }.map { toDoodleDate(it) }
     }
 
     /**
@@ -117,22 +121,24 @@ class DatabaseService {
      * Returns the [EntityID]s of the [DoodleDate]s corresponding to the given [dates].
      */
     private suspend fun getDateIdsByDates(dates: List<LocalDate>): List<EntityID<Int>> {
-        return dates.map {
+        val dateIds = dates.map {
             dbQuery {
                 DoodleDates.select { (DoodleDates.doodleDate eq it) }
                         .map { row -> row[DoodleDates.id] }
                         .single()
             }
         }
+        if (dateIds.size != dates.size) throw NotFoundException("One ore more dates not found, given: $dates, found ids: $dateIds")
+        return dateIds
     }
 
     /**
      * Adds participation entries for the [dates] and the [participant] to the Doodle corresponding to [doodleId].
      */
     suspend fun addParticipations(doodleId: UUID, participant: Participant, dates: List<LocalDate>) {
-        // Should throw exception if dates or doodleId do not exist in db
         val dateIds = getDateIdsByDates(dates)
         dbQuery {
+            if (doodleDoesNotExist(doodleId)) throw NotFoundException("DoodleInfo with id $doodleId not found")
             Participations.batchInsert(dateIds) {
                 this[Participations.doodleDate] = it
                 this[Participations.doodleInfo] = doodleId
@@ -177,6 +183,7 @@ class DatabaseService {
      * Dates without any participants are not added to the returned map.
      */
     suspend fun getParticipationsByDoodleId(doodleId: UUID): Map<LocalDate, List<EntityID<Int>>> = dbQuery {
+        if (doodleDoesNotExist(doodleId)) throw NotFoundException("DoodleInfo with id $doodleId not found")
         (DoodleInfos crossJoin Participations crossJoin DoodleDates).select {
             (DoodleInfos.id eq doodleId) and (DoodleInfos.id eq Participations.doodleInfo) and (DoodleDates.id eq Participations.doodleDate)
         }.groupBy({it[DoodleDates.doodleDate]}, {it[Participations.participant]})
@@ -203,6 +210,14 @@ class DatabaseService {
         DoodleInfos.update({DoodleInfos.id eq doodleId}) {
             it[isClosed] = Op.TRUE
         }
+    }
+
+    /**
+     * Return true iff Doodle corresponding to [doodleId] does not exist in the database.
+     * Must be called from inside a [dbQuery] block.
+     */
+    private fun doodleDoesNotExist(doodleId: UUID): Boolean {
+        return DoodleInfos.select { DoodleInfos.id eq doodleId }.empty()
     }
 
     /**
