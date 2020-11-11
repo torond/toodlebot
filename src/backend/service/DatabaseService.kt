@@ -84,7 +84,7 @@ class DatabaseService {
      * If the list is empty, there is no Doodle with this Throws a [NotFoundException] if an
      */
     suspend fun getProposedDatesByDoodleId(doodleId: UUID): List<DoodleDate> = dbQuery {
-        if (doodleDoesNotExist(doodleId)) throw NotFoundException("DoodleInfo with id $doodleId not found")
+        checkDoodleExists(doodleId)
         checkDoodleIsOpen(doodleId)
         (DoodleInfos crossJoin InfoJoinDate crossJoin DoodleDates).select {
             (DoodleInfos.id eq doodleId) and (DoodleInfos.id eq InfoJoinDate.doodleInfo) and (DoodleDates.id eq InfoJoinDate.doodleDate)
@@ -95,7 +95,7 @@ class DatabaseService {
      * Returns the final [DoodleDate]s of the Doodle corresponding to [doodleId].
      */
     suspend fun getFinalDatesByDoodleId(doodleId: UUID): List<DoodleDate> = dbQuery {
-        if (doodleDoesNotExist(doodleId)) throw NotFoundException("DoodleInfo with id $doodleId not found")
+        checkDoodleExists(doodleId)
         (DoodleInfos crossJoin InfoJoinDate crossJoin DoodleDates).select {
             (DoodleInfos.id eq doodleId) and (DoodleInfos.id eq InfoJoinDate.doodleInfo) and (DoodleDates.id eq InfoJoinDate.doodleDate) and (InfoJoinDate.isFinal eq Op.TRUE)
         }.map { toDoodleDate(it) }
@@ -140,7 +140,7 @@ class DatabaseService {
     suspend fun addParticipations(doodleId: UUID, participant: Participant, dates: List<LocalDate>) {
         val dateIds = getDateIdsByDates(dates)
         dbQuery {
-            if (doodleDoesNotExist(doodleId)) throw NotFoundException("DoodleInfo with id $doodleId not found")
+            checkDoodleExists(doodleId)
             checkDoodleIsOpen(doodleId)
             Participations.batchInsert(dateIds) {
                 this[Participations.doodleDate] = it
@@ -187,7 +187,7 @@ class DatabaseService {
      * Dates without any participants are not added to the returned map.
      */
     suspend fun getParticipationsByDoodleId(doodleId: UUID): Map<LocalDate, List<EntityID<Int>>> = dbQuery {
-        if (doodleDoesNotExist(doodleId)) throw NotFoundException("DoodleInfo with id $doodleId not found")
+        checkDoodleExists(doodleId)
         (DoodleInfos crossJoin Participations crossJoin DoodleDates).select {
             (DoodleInfos.id eq doodleId) and (DoodleInfos.id eq Participations.doodleInfo) and (DoodleDates.id eq Participations.doodleDate)
         }.groupBy({it[DoodleDates.doodleDate]}, {it[Participations.participant]})
@@ -219,16 +219,18 @@ class DatabaseService {
     }
 
     /**
-     * Return true iff Doodle corresponding to [doodleId] does not exist in the database.
+     * Throws [NotFoundException] iff Doodle corresponding to [doodleId] does not exist in the database.
      * Must be called from inside a [dbQuery] block.
      */
-    private fun doodleDoesNotExist(doodleId: UUID): Boolean {
-        return DoodleInfos.select { DoodleInfos.id eq doodleId }.empty()
+    private fun checkDoodleExists(doodleId: UUID) {
+        if (DoodleInfos.select { DoodleInfos.id eq doodleId }.empty()) {
+            throw NotFoundException("DoodleInfo with id $doodleId not found")
+        }
     }
 
     /**
-     * Return true iff Doodle corresponding to [doodleId] is not marked isClosed.
-     * Assumes Doodle exists, thus best used after [doodleDoesNotExist] check.
+     * Throws [IllegalStateException] iff Doodle corresponding to [doodleId] is marked isClosed.
+     * Assumes Doodle exists, thus best used after [checkDoodleExists] check.
      * Must be called from inside a [dbQuery] block.
      */
     private fun checkDoodleIsOpen(doodleId: UUID) {
