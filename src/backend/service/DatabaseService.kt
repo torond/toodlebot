@@ -69,6 +69,7 @@ class DatabaseService {
         val toBeDeleted = oldDateIds.minus(newDateIds)
         val toBeAdded = newDateIds.minus(oldDateIds)
         dbQuery {
+            Participations.deleteWhere { (Participations.doodleInfo eq doodleId) and (Participations.doodleDate inList toBeDeleted) }
             InfoJoinDate.deleteWhere { (InfoJoinDate.doodleInfo eq doodleId) and (InfoJoinDate.doodleDate inList toBeDeleted) }
             InfoJoinDate.batchInsert(toBeAdded) {
                 this[InfoJoinDate.doodleDate] = it
