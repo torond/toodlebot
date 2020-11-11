@@ -3,10 +3,10 @@ package io.doodlebot.service
 import io.doodlebot.backend.model.NewParticipant
 import io.doodlebot.backend.model.Participants
 import io.doodlebot.backend.service.DatabaseService
-import kotlin.test.*
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.id.EntityID
 import java.time.LocalDate
+import kotlin.test.*
 
 class DatabaseServiceTest {
     private val databaseService = DatabaseService()
@@ -122,6 +122,24 @@ class DatabaseServiceTest {
                         && savedFinalDates.containsAll(finalDates)
         )
         assertTrue(databaseService.getDoodleById(doodle.id).isClosed)
+    }
+
+    @Test(expected=IllegalStateException::class)
+    fun `Trying to change a closed Doodle should throw IllegalStateException`() = runBlocking {
+        // Given
+        val dates = listOf(LocalDate.parse("2015-03-27")!!)
+        val newDates = listOf(LocalDate.parse("2015-03-01")!!)
+        val doodle = databaseService.createDoodleFromDates(dates)
+        val newParticipant = NewParticipant("c")
+        val savedParticipant = databaseService.addParticipantIfNotExisting(newParticipant)
+        databaseService.addParticipations(doodle.id, savedParticipant, dates)
+        databaseService.markDoodleAsClosed(doodle.id)
+
+        // When Then
+        assertFails { databaseService.updateDatesOfDoodle(doodle.id, newDates) }
+        assertFails { databaseService.updateParticipations(doodle.id, savedParticipant, newDates) }
+        assertTrue(databaseService.getProposedDatesByDoodleId(doodle.id) == dates)
+        assertEquals(databaseService.getParticipationsByDoodleId(doodle.id)[dates.single()]!!.single().value, savedParticipant.id)
     }
 
     /*

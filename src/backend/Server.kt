@@ -57,6 +57,10 @@ fun Application.module(testing: Boolean = false) {
             call.respond(HttpStatusCode.BadRequest)  // If content cannot be negotiated
             log.warn(cause.message)
         }
+        exception<IllegalStateException> { cause ->
+            call.respond(HttpStatusCode.Forbidden)
+            log.warn(cause.message)
+        }
         // UnauthorizedException if /setup/{doodleId} is queried by non-admin
     }
 

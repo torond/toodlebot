@@ -1,27 +1,12 @@
 package io.doodlebot
 
-import io.ktor.application.*
-import io.ktor.response.*
-import io.ktor.request.*
-import io.ktor.routing.*
-import io.ktor.http.*
-import com.github.mustachejava.DefaultMustacheFactory
-import io.doodlebot.backend.model.DoodleDates
-import io.doodlebot.backend.model.DoodleInfos
-import io.doodlebot.backend.model.InfoJoinDate
 import io.doodlebot.backend.module
-import io.ktor.mustache.Mustache
-import io.ktor.mustache.MustacheContent
-import io.ktor.gson.*
-import io.ktor.features.*
-import kotlin.test.*
+import io.ktor.http.*
 import io.ktor.server.testing.*
-import io.ktor.util.*
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.insertAndGetId
-import org.jetbrains.exposed.sql.transactions.transaction
-import java.time.LocalDate
 import java.util.*
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class ApplicationTest {
     @Test
@@ -66,6 +51,7 @@ class ApplicationTest {
     * `Return bad request if doodleId has no doodle (on every endpoint)`
     * `Answers with yesDates outside of the proposed dates should return specific status`
     * `Malformed UUID should return Bad Request`
+    * `Changing closed Doodle should return Forbidden`
     *
     *
     *
