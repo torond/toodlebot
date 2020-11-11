@@ -19,7 +19,7 @@ class DatabaseServiceTest {
         // When
         val savedDoodle = databaseService.createDoodleFromDates(dates)
         val retrievedDates = databaseService.getProposedDatesByDoodleId(savedDoodle.id).map { it.doodleDate }
-        val retrievedDoodle = databaseService.getDoodleById(savedDoodle.id)!!
+        val retrievedDoodle = databaseService.getDoodleById(savedDoodle.id)
 
         // Then
         assertTrue(dates.size == retrievedDates.size
@@ -109,7 +109,7 @@ class DatabaseServiceTest {
         val doodle = databaseService.createDoodleFromDates(dates)
 
         // Before
-        assertFalse(databaseService.getDoodleById(doodle.id)!!.isClosed)
+        assertFalse(databaseService.getDoodleById(doodle.id).isClosed)
 
         // When
         databaseService.markDatesAsFinal(doodle.id, finalDates)
@@ -121,8 +121,16 @@ class DatabaseServiceTest {
                         && finalDates.containsAll(savedFinalDates)
                         && savedFinalDates.containsAll(finalDates)
         )
-        assertTrue(databaseService.getDoodleById(doodle.id)!!.isClosed)
+        assertTrue(databaseService.getDoodleById(doodle.id).isClosed)
     }
+
+    /*
+    * @Test
+    * fun `getDateIdsByDates should throw exception if a date does not exist`()
+    *
+    * @Test
+    * fun `methods throwing NotFoundException should throw them if Doodle does not exist`()
+    * */
 
     /*@Test
     fun `Reuse old date entries`() = runBlocking {

@@ -6,6 +6,7 @@ import io.doodlebot.backend.service.DatabaseFactory
 import io.doodlebot.backend.service.DatabaseService
 import io.ktor.application.*
 import io.ktor.features.*
+import io.ktor.features.ContentTransformationException
 import io.ktor.gson.*
 import io.ktor.http.*
 import io.ktor.mustache.*
@@ -16,6 +17,7 @@ import org.jetbrains.exposed.dao.id.EntityID
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 import java.util.*
 
 const val TEMPLATE_PATH = "templates"
@@ -34,25 +36,45 @@ fun main() {
 fun Application.module(testing: Boolean = false) {
     install(Mustache) { mustacheFactory = DefaultMustacheFactory(TEMPLATE_PATH) }
     install(ContentNegotiation) { gson {} }
-    /*install(StatusPages) {IllegalArgumentException (from UUID.fromString(),
-            IllegalStateExeption (from checkNotNull),
-            DateTimeParseException (from LocalDate.parse())}
-            ContentTransformationException (from call.receive)*/
+    install(StatusPages) {
+        exception<BadRequestException> { cause ->
+            call.respond(HttpStatusCode.BadRequest) // If request is missing doodleId or dates
+            log.warn(cause.message)
+        }
+        exception<NotFoundException> { cause ->
+            call.respond(HttpStatusCode.NotFound)  // If Doodle or dates are not found
+            log.warn(cause.message)
+        }
+        exception<DateTimeParseException> { cause ->
+            call.respond(HttpStatusCode.BadRequest)
+            log.warn(cause.message)
+        }
+        exception<ContentTransformationException> { cause ->
+            call.respond(HttpStatusCode.BadRequest)  // If content cannot be negotiated
+            log.warn(cause.message)
+        }
+        exception<IllegalArgumentException> { cause ->
+            call.respond(HttpStatusCode.BadRequest)  // If content cannot be negotiated
+            log.warn(cause.message)
+        }
+        // UnauthorizedException if /setup/{doodleId} is queried by non-admin
+    }
 
     DatabaseFactory.init()
     val databaseService = DatabaseService()
     val inputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
-    fun ApplicationCall.getUuid(): UUID {
-        checkNotNull(this.parameters["doodleId"]) { "Must provide id" }
+    fun ApplicationCall.getDoodleId(): UUID {
+        this.parameters["doodleId"] ?: throw BadRequestException("Must provide id")
         return UUID.fromString(this.parameters["doodleId"])
     }
+    fun ApplicationCall.getDoodleIdOrNull(): UUID? {
+        return this.parameters["doodleId"]?.let { UUID.fromString(it) }
+    }
     suspend fun ApplicationCall.getDates(): List<LocalDate> {
-        val raw = this.receiveOrNull<List<String>>()
-        checkNotNull(raw) { "Must provide dates" }
+        val raw = this.receiveOrNull<List<String>>() ?: throw BadRequestException("Must provide dates")
         return raw.map { LocalDate.parse(it, inputFormatter) }
     }
-
 
     //pickableDates by doodleId (dates enabled in the calendar)
     // -> /setup/{doodleId}: All dates
@@ -75,14 +97,6 @@ fun Application.module(testing: Boolean = false) {
     // 3. Final dates chosen by admin -> finalDates in backend and frontend
 
     /*
-    * GET Endpoint: clean slate / previous data
-    * POST Endpoint: Accept new data / Accept updated data
-    *
-    *
-    * */
-
-
-    /*
     * Principle of least astonishment.
     * Be precise.
     * -> Mention parameters (byDoodleId), but not in add methods?
@@ -94,21 +108,7 @@ fun Application.module(testing: Boolean = false) {
     * ideas:
     * - only update methods -> addOrUpdate
     *
-    *
-    *
     * questions: Optional return types?
-    *
-    *
-    * getProposedDatesByDoodleId(id: UUID): List<DoodleDate>
-    * addDoodleWithDates(dates: List<LocalDate>): UUID -> ???
-    * updateDoodleWithDates -> ???
-    * addParticipantIfNotExisting(participant: NewParticipant): EntityID<Int>
-    * addParticipations(doodleId: UUID, participantId: EntityID<Int>, dateIds: List<EntityID<Int>>)
-    * getParticipationsByDoodleId(id: UUID): Map<LocalDate, List<EntityID<Int>>>
-    * getDoodleById(id: UUID): DoodleInfo (for numOfParts) ->
-    * markDatesAsFinal(id: UUID, dateIds: List<EntityID<Int>>) -> markDatesByDoodleIdAsFinal??
-    * markDoodleAsClosed(id: UUID) -> closeDoodleById
-    * getFinalDatesByDoodleId(id: UUID): List<DoodleDate>
     * */
 
     fun buildMustacheMapping(config: DoodleConfig,
@@ -130,55 +130,42 @@ fun Application.module(testing: Boolean = false) {
     }
 
     routing {
-        get("/test/{doodleId}") {
-            val doodleId = call.getUuid()
-            println(databaseService.getProposedDatesByDoodleId(doodleId))
-            call.respond(HttpStatusCode.OK)
-        }
-
-
         /** Endpoint for setting up and editing the initial dates of a Doodle */
-        // Clean slate
-        get("/setup") {
-            call.respond(MustacheContent(TEMPLATE_NAME, mapOf("config" to DoodleConfig.SETUP)))
-        }
-
-        // Previous data
-        get("/setup/{doodleId}") {
+        get("/setup/{doodleId?}") {
             // TODO: When admin removes dates, also remove corresponding participant answers
-            val doodleId = call.getUuid()
-            val proposedDates = databaseService.getProposedDatesByDoodleId(doodleId).map { it.doodleDate }
-            val mustacheMapping = buildMustacheMapping(DoodleConfig.SETUP, defaultDates = proposedDates, doodleId = doodleId)
-            call.respond(MustacheContent(TEMPLATE_NAME, mustacheMapping))
+            val doodleId = call.getDoodleIdOrNull()
+            if (doodleId == null) {  // No previous data
+                call.respond(MustacheContent(TEMPLATE_NAME, mapOf("config" to DoodleConfig.SETUP)))
+            } else {  // Show previous data
+                val proposedDates = databaseService.getProposedDatesByDoodleId(doodleId).map { it.doodleDate }
+                val mustacheMapping = buildMustacheMapping(DoodleConfig.SETUP, defaultDates = proposedDates, doodleId = doodleId)
+                call.respond(MustacheContent(TEMPLATE_NAME, mustacheMapping))
+            }
         }
 
         /** Accepts setup dates for the Doodle */
-        // Accept new data
-        post("/setup") {
-            // TODO: At least one date must be selected
-            val proposedDates = call.getDates()
-            val doodle = databaseService.createDoodleFromDates(proposedDates)
-            call.respond(HttpStatusCode.OK, doodle.id)
-        }
-
-        // Update data
-        post("/setup/{doodleId}") {
-            val doodleId = call.getUuid()
-            val proposedDates = call.getDates()
-            databaseService.updateDatesOfDoodle(doodleId, proposedDates)
-            call.respond(HttpStatusCode.OK)
+        post("/setup/{doodleId?}") {
+            val doodleId = call.getDoodleIdOrNull()
+            if (doodleId == null) {  // Accept new data
+                // TODO: At least one date must be selected
+                val proposedDates = call.getDates()
+                val doodle = databaseService.createDoodleFromDates(proposedDates)
+                call.respond(HttpStatusCode.OK, doodle.id)
+            } else {  // Update data
+                val proposedDates = call.getDates()
+                databaseService.updateDatesOfDoodle(doodleId, proposedDates)
+                call.respond(HttpStatusCode.OK)
+            }
         }
 
         /** Endpoint for answering and editing the answers of a Doodle */
         // Clean slate & show previous state
         // UUID is mandatory
-        get("/answer/{doodleId}") {
+        get("/answer/{doodleId?}") {
             // TODO: Authentication / recognize user -> For now only one user w/o authentication
             // TODO: This also needs to show already chosen dates (defaultDates = yesDates), i.e. editing must be possible (auth first and retrieve answers if any)
             // TODO: Get Participations (of all users) and show them in the calendar
-            // -> databaseService.getParticipations(doodleId, participantId) -> Give this list to the Mustache Template
-            // Get dates from DB
-            val doodleId = call.getUuid()
+            val doodleId = call.getDoodleId()
             val proposedDates = databaseService.getProposedDatesByDoodleId(doodleId).map { it.doodleDate }
             val mustacheMapping = buildMustacheMapping(DoodleConfig.ANSWER, enabledDates = proposedDates, doodleId = doodleId)
             call.respond(MustacheContent(TEMPLATE_NAME, mustacheMapping))
@@ -186,31 +173,30 @@ fun Application.module(testing: Boolean = false) {
 
         /** Accepts answer and their edits of a Doodle */
         // Accept new data & update data
-        post("/answer/{doodleId}") {
+        post("/answer/{doodleId?}") {
             // TODO: Check if proposedDates containsAll answeredDates
             // TODO: This also needs to accept edits on answers
             // TODO: Implement auth, to use real data
-            val doodleId = call.getUuid()
+            val doodleId = call.getDoodleId()
             val yesDates = call.getDates()
 
             val newParticipant = NewParticipant(LocalTime.now().toString())
             val participant = databaseService.addParticipantIfNotExisting(newParticipant)
 
             // Add Participations
-            // -> databaseService.updateParticipations(doodleId, participant, yesDates)
+            // TODO: databaseService.updateParticipations(doodleId, participant, yesDates) needs auth
             databaseService.addParticipations(doodleId, participant, yesDates)
 
             call.respond(HttpStatusCode.OK)
         }
 
         /** Endpoint for closing a Doodle */
-        get("/close/{doodleId}") {
+        get("/close/{doodleId?}") {
             // Needs: pickableDates, Participations
-            val doodleId = call.getUuid()
+            val doodleId = call.getDoodleId()
             val proposedDates = databaseService.getProposedDatesByDoodleId(doodleId).map { it.doodleDate }
             val participations = databaseService.getParticipationsByDoodleId(doodleId)
-            val numberOfParticipants = databaseService.getDoodleById(doodleId)?.numberOfParticipants  // TODO: Null check!
-            // TODO: Show closed dates to accept for editing? (defaultDates = finalDates)
+            val numberOfParticipants = databaseService.getDoodleById(doodleId).numberOfParticipants
             val mustacheMapping = buildMustacheMapping(DoodleConfig.CLOSE,
                     enabledDates = proposedDates,
                     numberOfParticipants = numberOfParticipants,
@@ -221,8 +207,8 @@ fun Application.module(testing: Boolean = false) {
 
         /** Accepts final dates of a Doodle*/
         // Accept new data, no updates!
-        post("/close/{doodleId}") {
-            val doodleId = call.getUuid()
+        post("/close/{doodleId?}") {
+            val doodleId = call.getDoodleId()
             val finalDates = call.getDates()
             databaseService.markDatesAsFinal(doodleId, finalDates)
             databaseService.markDoodleAsClosed(doodleId)
@@ -234,12 +220,12 @@ fun Application.module(testing: Boolean = false) {
 
         /** Endpoint for viewing the results of a Doodle*/
         // Present (all) data
-        get("/view/{doodleId}") {
+        get("/view/{doodleId?}") {
             // TODO: Check if Doodle is closed
             // TODO: Show own chosen Dates? (auth first and retrieve yesDates if any)
-            val doodleId = call.getUuid()
+            val doodleId = call.getDoodleId()
             val participations = databaseService.getParticipationsByDoodleId(doodleId)
-            val numberOfParticipants = databaseService.getDoodleById(doodleId)?.numberOfParticipants  // TODO: Null check!
+            val numberOfParticipants = databaseService.getDoodleById(doodleId).numberOfParticipants
             val proposedDates = databaseService.getProposedDatesByDoodleId(doodleId).map { it.doodleDate }
             val finalDates = databaseService.getFinalDatesByDoodleId(doodleId).map { it.doodleDate }
             val mustacheMapping = buildMustacheMapping(DoodleConfig.VIEW,
