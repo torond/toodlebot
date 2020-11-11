@@ -134,6 +134,16 @@ fun Application.module(testing: Boolean = false) {
     }
 
     routing {
+        intercept(ApplicationCallPipeline.Call) {
+            this.call.getDoodleIdOrNull()?.let {
+                println(this.call.request.uri)
+                if (!this.call.request.uri.startsWith("/view") && databaseService.doodleIsClosed(it)) {
+                    this.call.respondRedirect("/view/$it")
+                    this.finish()
+                }
+            }
+        }
+
         /** Endpoint for setting up and editing the initial dates of a Doodle */
         get("/setup/{doodleId?}") {
             // TODO: When admin removes dates, also remove corresponding participant answers
@@ -141,9 +151,13 @@ fun Application.module(testing: Boolean = false) {
             if (doodleId == null) {  // No previous data
                 call.respond(MustacheContent(TEMPLATE_NAME, mapOf("config" to DoodleConfig.SETUP)))
             } else {  // Show previous data
-                val proposedDates = databaseService.getProposedDatesByDoodleId(doodleId).map { it.doodleDate }
-                val mustacheMapping = buildMustacheMapping(DoodleConfig.SETUP, defaultDates = proposedDates, doodleId = doodleId)
-                call.respond(MustacheContent(TEMPLATE_NAME, mustacheMapping))
+                if (databaseService.doodleIsClosed(doodleId)) {
+                    call.respondRedirect("/view", false)
+                } else {
+                    val proposedDates = databaseService.getProposedDatesByDoodleId(doodleId).map { it.doodleDate }
+                    val mustacheMapping = buildMustacheMapping(DoodleConfig.SETUP, defaultDates = proposedDates, doodleId = doodleId)
+                    call.respond(MustacheContent(TEMPLATE_NAME, mustacheMapping))
+                }
             }
         }
 
@@ -218,14 +232,13 @@ fun Application.module(testing: Boolean = false) {
             databaseService.markDoodleAsClosed(doodleId)
 
             // Redirect admin to /view/{doodleId}
-            call.respondRedirect("/view/${doodleId}")
-            //call.respond(HttpStatusCode.OK)
+            //call.respondRedirect("/view/${doodleId}")
+            call.respond(HttpStatusCode.OK)
         }
 
         /** Endpoint for viewing the results of a Doodle*/
         // Present (all) data
         get("/view/{doodleId?}") {
-            // TODO: Check if Doodle is closed
             // TODO: Show own chosen Dates? (auth first and retrieve yesDates if any)
             val doodleId = call.getDoodleId()
             val participations = databaseService.getParticipationsByDoodleId(doodleId)

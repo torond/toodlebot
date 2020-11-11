@@ -47,6 +47,34 @@ class ApplicationTest {
         }
     }
 
+    /*@Test
+    fun `Redirect to view if Doodle is closed`() {
+        // Given
+        withTestApplication({ module(testing = true) }) {
+            // When
+            val call1 = handleRequest(HttpMethod.Post, "/setup") {
+                addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                setBody("[\"2020-10-01\"]")
+            }
+            val doodleId = call1.parameters["doodleId"]!!
+            handleRequest(HttpMethod.Post, "/close/$doodleId") {
+                addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                setBody("[\"2020-10-01\"]")
+            }
+
+            // Then
+            // TODO: This does not work!
+            // Maybe each handleRequest() resets the DB? Look at log.
+            val call2 = handleRequest(HttpMethod.Get, "/answer/$doodleId") {
+                addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                setBody("[\"2020-10-01\"]")
+            }
+            println(call2.request.uri)
+            println(call2.response.headers)
+            //assertEquals(call2.response.)
+        }
+    }*/
+
     /*
     * `Return bad request if doodleId has no doodle (on every endpoint)`
     * `Answers with yesDates outside of the proposed dates should return specific status`
