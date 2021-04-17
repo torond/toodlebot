@@ -11,6 +11,7 @@
       <option name="taskNames">
         <list>
           <option value="run" />
+          <option value="--args=&quot;192.168.178.25&quot;" />
         </list>
       </option>
       <option name="vmOptions" value="" />
