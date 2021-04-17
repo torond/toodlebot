@@ -5,11 +5,22 @@ import io.ktor.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import kotlinx.coroutines.*
+import java.io.FileInputStream
+import java.util.*
 import kotlin.concurrent.thread
 
 
-fun main(args: Array<String>) {
-    val bot = setup(args[0])
+fun main() {
+    // Load properties
+    val props = Properties()
+    val inputStream = FileInputStream("environment.properties")
+    props.load(inputStream)
+
+    val bot = setup(
+        props.getProperty("bot_name"),
+        props.getProperty("bot_token"),
+        props.getProperty("local_ip")
+    )
     thread(start=true) {
         bot.start()
     }
