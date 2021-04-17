@@ -13,23 +13,19 @@ import io.ktor.mustache.*
 import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
+import io.ktor.server.engine.*
+import io.ktor.server.netty.*
 import org.jetbrains.exposed.dao.id.EntityID
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import java.util.*
+import io.doodlebot.bot.setup
+import kotlin.concurrent.thread
 
 const val TEMPLATE_PATH = "templates"
 const val TEMPLATE_NAME = "frontend.mustache"
-
-fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
-
-/* Maybe instead:
-fun main() {
-    embeddedServer(Netty, port = 8080, host = "127.0.0.1", module = Application::module, watchPaths = listOf("/DoodleBotWebBackend/")).start(wait = true)
-}
- */
 
 @Suppress("unused") // Referenced in application.conf
 @kotlin.jvm.JvmOverloads

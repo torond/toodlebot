@@ -5,6 +5,7 @@ val ktor_version: String by project
 val kotlin_version: String by project
 val logback_version: String by project
 val exposed_version: String by project
+val local_ip: String by project
 
 plugins {
     application
@@ -15,7 +16,7 @@ group = "io.doodlebot"
 version = "0.0.1"
 
 application {
-    mainClassName = "io.ktor.server.netty.EngineMain"
+    mainClassName = "io.doodlebot.ApplicationKt"
 }
 
 repositories {

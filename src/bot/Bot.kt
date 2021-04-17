@@ -2,53 +2,20 @@ package io.doodlebot.bot
 
 import com.elbekD.bot.Bot
 import com.elbekD.bot.feature.chain.chain
-import com.elbekD.bot.feature.chain.jumpTo
-import com.elbekD.bot.feature.chain.jumpToAndFire
+import com.elbekD.bot.feature.chain.terminateChain
+import com.elbekD.bot.types.InlineKeyboardButton
+import com.elbekD.bot.types.InlineKeyboardMarkup
+import com.elbekD.bot.util.keyboard.KeyboardFactory
 
-fun main() {
-    val token = "1264466484:AAE1TzsjmxfGCGcrq8Ny8Is7enqXMnTYm3U"
-    val username = "KotlinOBottleBot"
+fun setup(local_ip: String): Bot {
+    val username = "DateFinderBot"
+    val token = "1766857687:AAHmtN907ReQ1PNvSjuW1DNnJtP5-ghGFRA"
     val bot = Bot.createPolling(username, token)
+    val setupKeyboard = InlineKeyboardMarkup(KeyboardFactory.inlineMarkup(listOf(InlineKeyboardButton("Create Doodle", "http://${local_ip}:8088/setup"))))
+    println("Server URL for setup: http://${local_ip}:8088/setup")
 
-    bot.chain("/start") { msg -> bot.sendMessage(msg.chat.id, "Hi! What is your name?") }
-        .then { msg -> bot.sendMessage(msg.chat.id, "Nice to meet you, ${msg.text}! Send something to me") }
-        .then { msg -> bot.sendMessage(msg.chat.id, "Fine! See you soon") }
-        .build()
+    bot.onCommand("/start") { msg, _ -> bot.sendMessage(msg.chat.id, "Click the button below!", markup = setupKeyboard) }
+    bot.onCommand("/s") { msg, _ -> bot.sendMessage(msg.chat.id, "Click the button below!") }
 
-    bot.chain(
-        label = "location_chain",
-        predicate = { msg -> msg.location != null },
-        action = { msg ->
-            bot.sendMessage(
-                msg.chat.id,
-                "Fine, u've sent me a location. Is this where you want to order a taxi?(yes|no)"
-            )
-        })
-        .then("answer_choice") { msg ->
-            when (msg.text) {
-                "yes" -> bot.jumpToAndFire("order_taxi", msg)
-                "no" -> bot.jumpToAndFire("cancel_ordering", msg)
-                else -> {
-                    bot.sendMessage(msg.chat.id, "Oops, I don't understand you. Just answer yes or no?")
-                    bot.jumpTo("answer_choice", msg)
-                }
-            }
-        }
-        .then("order_taxi", isTerminal = true) { msg ->
-            bot.sendMessage(msg.chat.id, "Fine! Taxi is coming")
-        }
-        .then("cancel_ordering", isTerminal = true) { msg ->
-            bot.sendMessage(msg.chat.id, "Ok! See you next time")
-        }
-        .build()
-
-    bot.chain(
-        label = "sticker chain",
-        predicate = { msg -> msg.sticker != null },
-        action = { msg ->
-            bot.sendMessage(msg.chat.id, "Sticker!")
-        })
-        .build()
-
-    bot.start()
+    return bot
 }
