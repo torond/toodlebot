@@ -1,11 +1,10 @@
 import org.jetbrains.kotlin.gradle.dsl.Coroutines
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-val ktor_version: String by project
-val kotlin_version: String by project
-val logback_version: String by project
-val exposed_version: String by project
-val local_ip: String by project
+val ktor_version="1.4.1"
+val kotlin_version="1.4.10"
+val logback_version="1.2.1"
+val exposed_version="0.27.1"
 
 plugins {
     application
