@@ -7,30 +7,24 @@ import com.elbekD.bot.types.InlineKeyboardButton
 import com.elbekD.bot.types.InlineKeyboardMarkup
 import com.elbekD.bot.types.LoginUrl
 import com.elbekD.bot.util.keyboard.KeyboardFactory
+import io.doodlebot.backend.service.Env
 import java.io.FileInputStream
 import java.util.*
 
-// TODO: This is hacky
-private var LOCAL_IP = ""
-
 fun setup(): Bot {
-    val props = Properties()
-    val inputStream = FileInputStream("environment.properties")
-    props.load(inputStream)
-    LOCAL_IP = props.getProperty("local_ip")
 
-    val bot = Bot.createPolling(props.getProperty("bot_name"), props.getProperty("bot_token"))
+    val bot = Bot.createPolling(Env.botName, Env.botToken)
     val setupKeyboard = InlineKeyboardMarkup(
         KeyboardFactory.inlineMarkup(
             listOf(
                 InlineKeyboardButton(
                     "Create Doodle",
-                    login_url = LoginUrl("http://${props.getProperty("local_ip")}:8088/setup", request_write_access = true)
+                    login_url = LoginUrl("http://${Env.localIp}:8088/setup", request_write_access = true)
                 )
             )
         )
     )
-    println("Server URL for setup: http://${props.getProperty("local_ip")}:8088/setup")
+    println("Server URL for setup: http://${Env.localIp}:8088/setup")
 
     bot.onCommand("/start") { msg, value ->
         if (value != null) {
@@ -43,7 +37,7 @@ fun setup(): Bot {
                         listOf(
                             InlineKeyboardButton(
                                 "Answer Doodle",
-                                login_url = LoginUrl("http://${props.getProperty("local_ip")}:8088/answer/$value", request_write_access = true)
+                                login_url = LoginUrl("http://${Env.localIp}:8088/answer/$value", request_write_access = true)
                             )
                         )
                     )
@@ -72,7 +66,7 @@ fun Bot.sendShareableDoodle(chatId: String, doodleId: String) {
                     InlineKeyboardButton(
                         "Share Doodle",
                         switch_inline_query = "Answer Doodle",
-                        login_url = LoginUrl("http://${LOCAL_IP}:8088/answer/$doodleId",
+                        login_url = LoginUrl("http://${Env.localIp}:8088/answer/$doodleId",
                             request_write_access = true)
                     )
                 )

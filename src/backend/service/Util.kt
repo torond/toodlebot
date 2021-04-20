@@ -2,6 +2,8 @@ package io.doodlebot.backend.service
 
 import org.apache.commons.codec.binary.Hex
 import org.apache.commons.codec.digest.DigestUtils
+import java.io.FileInputStream
+import java.util.Properties
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
@@ -9,8 +11,12 @@ data class JsonData(val dates: List<String>, val meta: Map<String, String>)
 
 object HashUtil {
     private val sha256Hmac = Mac.getInstance("HmacSHA256")
+
+    init {
+        sha256Hmac.init(SecretKeySpec(DigestUtils.sha256(Env.botToken), "HmacSHA256"))
+    }
+
     fun createHash(data: String): String {
-        sha256Hmac.init(SecretKeySpec(DigestUtils.sha256("1766857687:AAHfNcyBQ-fJlLBN5KoJoyOLRZOW7Sfq1S0"), "HmacSHA256"))
         return Hex.encodeHexString(sha256Hmac.doFinal(data.toByteArray()))
     }
 }
@@ -35,6 +41,22 @@ data class LoginData(
             if (username != null) "username=${username}" else null
         ).joinToString("\n")
         assert(hash == HashUtil.createHash(dataCheckString))
+    }
+}
+
+object Env {
+    // Holds data from environment.properties
+    private val props = Properties()
+    private val inputStream = FileInputStream("environment.properties")
+    val localIp: String
+    val botName: String
+    val botToken: String
+
+    init {
+        props.load(inputStream)
+        localIp = props.getProperty("local_ip")
+        botName = props.getProperty("bot_name")
+        botToken = props.getProperty("bot_token")
     }
 }
 
