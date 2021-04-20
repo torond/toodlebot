@@ -12,7 +12,7 @@ import kotlin.concurrent.thread
 
 fun main() {
     // Load properties
-    val props = Properties()
+    /*val props = Properties()
     val inputStream = FileInputStream("environment.properties")
     props.load(inputStream)
 
@@ -23,7 +23,7 @@ fun main() {
     )
     thread(start=true) {
         bot.start()
-    }
+    }*/
     thread(start=true) {
         embeddedServer(Netty, host="0.0.0.0", port = 8088, module = Application::module).start(wait = true)
     } //, watchPaths = listOf("/DoodleBotWebBackend/")
