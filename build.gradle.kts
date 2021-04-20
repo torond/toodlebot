@@ -39,6 +39,7 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposed_version")
     implementation("org.jetbrains.exposed:exposed-java-time:$exposed_version")
     implementation("org.xerial:sqlite-jdbc:3.30.1")
+    implementation("commons-codec:commons-codec:1.15")
 }
 
 kotlin.sourceSets["main"].kotlin.srcDirs("src")

@@ -74,7 +74,7 @@
 {{/numberOfParticipants}}
 
 <div class="custom-btn-holder">
-    <button type="button">Cancel</button>
+    <button type="cancel-button" onclick="window.location.href='tg:resolve'">Cancel</button>
     {{#config.hasConfirmButton}}
         <button id="confirm-button" type="button">Confirm</button>
     {{/config.hasConfirmButton}}
@@ -135,11 +135,16 @@
     xhr.onload = function () {
         if (xhr.status !== 200) {
             alert('Request failed. Returned status of ' + xhr.status);
+        } else {
+            console.log(xhr.response)
+            window.location.href='tg://msg_url?'+xhr.response
         }
     };
     document.getElementById("confirm-button").addEventListener("click",
             function () {
-                xhr.send(JSON.stringify(fp.selectedDates.map(x => formatDate(x))))
+                console.log(JSON.stringify({{chatId}}))
+                xhr.send(JSON.stringify({dates: fp.selectedDates.map(x => formatDate(x)),
+                                         meta: {chatId: "{{chatId}}"} }))
             },
             false
     );

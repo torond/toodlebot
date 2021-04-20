@@ -1,9 +1,12 @@
 package io.doodlebot.backend
 
 import com.github.mustachejava.DefaultMustacheFactory
+import io.doodlebot.backend.service.JsonData
+import io.doodlebot.backend.service.LoginData
 import io.doodlebot.backend.model.NewParticipant
 import io.doodlebot.backend.service.DatabaseFactory
 import io.doodlebot.backend.service.DatabaseService
+import io.doodlebot.bot.sendShareableDoodle
 import io.ktor.application.*
 import io.ktor.features.*
 import io.ktor.features.ContentTransformationException
@@ -13,8 +16,6 @@ import io.ktor.mustache.*
 import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
-import io.ktor.server.engine.*
-import io.ktor.server.netty.*
 import org.jetbrains.exposed.dao.id.EntityID
 import java.time.LocalDate
 import java.time.LocalTime
@@ -30,6 +31,10 @@ const val TEMPLATE_NAME = "frontend.mustache"
 @Suppress("unused") // Referenced in application.conf
 @kotlin.jvm.JvmOverloads
 fun Application.module(testing: Boolean = false) {
+    val bot = setup()
+    thread(start=true) {
+        bot.start()
+    }
     install(Mustache) { mustacheFactory = DefaultMustacheFactory(TEMPLATE_PATH) }
     install(ContentNegotiation) { gson {} }
     install(StatusPages) {
@@ -57,6 +62,10 @@ fun Application.module(testing: Boolean = false) {
             call.respond(HttpStatusCode.Forbidden)
             log.warn(cause.message)
         }
+        exception<AssertionError> { cause ->
+            call.respond(HttpStatusCode.Forbidden)
+            log.warn(cause.message)
+        }
         // UnauthorizedException if /setup/{doodleId} is queried by non-admin
     }
 
@@ -74,6 +83,18 @@ fun Application.module(testing: Boolean = false) {
     suspend fun ApplicationCall.getDates(): List<LocalDate> {
         val raw = this.receiveOrNull<List<String>>() ?: throw BadRequestException("Must provide dates")
         return raw.map { LocalDate.parse(it, inputFormatter) }
+    }
+    fun ApplicationCall.getAndVerifyTelegramLoginData(): LoginData? {
+        return LoginData(
+            this.request.queryParameters["auth_date"],
+            this.request.queryParameters["first_name"],
+            this.request.queryParameters["id"],
+            this.request.queryParameters["last_name"],
+            this.request.queryParameters["photo_url"],
+            this.request.queryParameters["username"],
+            this.request.queryParameters["hash"]
+        )
+        //return this.parameters["doodleIdf"]?.let { UUID.fromString(it) }
     }
 
     //pickableDates by doodleId (dates enabled in the calendar)
@@ -117,7 +138,8 @@ fun Application.module(testing: Boolean = false) {
                              finalDates: List<LocalDate>? = null,
                              numberOfParticipants: Int? = null,
                              participations: Map<LocalDate, List<EntityID<Int>>>? = null,
-                             doodleId: UUID? = null): Map<String, Any> {
+                             doodleId: UUID? = null,
+                             chatId: String? = null): Map<String, Any> {
         val mappings: MutableList<Pair<String, Any>> = mutableListOf()
         mappings.add("config" to config)
         if (doodleId != null) mappings.add("doodleId" to doodleId)
@@ -126,6 +148,7 @@ fun Application.module(testing: Boolean = false) {
         if (finalDates != null) mappings.add("finalDates" to mapOf("content" to finalDates))
         if (numberOfParticipants != null) mappings.add("numberOfParticipants" to numberOfParticipants)
         if (participations != null) mappings.add("participations" to mapOf("content" to participations.entries))
+        if (chatId != null) mappings.add("chatId" to mapOf("content" to chatId))
         return mappings.map { it.first to it.second }.toMap()
     }
 
@@ -144,14 +167,15 @@ fun Application.module(testing: Boolean = false) {
         get("/setup/{doodleId?}") {
             // TODO: When admin removes dates, also remove corresponding participant answers
             val doodleId = call.getDoodleIdOrNull()
+            val loginData = call.getAndVerifyTelegramLoginData()
             if (doodleId == null) {  // No previous data
-                call.respond(MustacheContent(TEMPLATE_NAME, mapOf("config" to DoodleConfig.SETUP)))
+                call.respond(MustacheContent(TEMPLATE_NAME, mapOf("config" to DoodleConfig.SETUP, "chatId" to loginData!!.id)))
             } else {  // Show previous data
                 if (databaseService.doodleIsClosed(doodleId)) {
                     call.respondRedirect("/view", false)
                 } else {
                     val proposedDates = databaseService.getProposedDatesByDoodleId(doodleId).map { it.doodleDate }
-                    val mustacheMapping = buildMustacheMapping(DoodleConfig.SETUP, defaultDates = proposedDates, doodleId = doodleId)
+                    val mustacheMapping = buildMustacheMapping(DoodleConfig.SETUP, defaultDates = proposedDates, doodleId = doodleId, chatId = loginData!!.id)
                     call.respond(MustacheContent(TEMPLATE_NAME, mustacheMapping))
                 }
             }
@@ -159,11 +183,17 @@ fun Application.module(testing: Boolean = false) {
 
         /** Accepts setup dates for the Doodle */
         post("/setup/{doodleId?}") {
+            // Get URL parameter
             val doodleId = call.getDoodleIdOrNull()
+            // Get body
+            val jsonData = call.receiveOrNull<JsonData>() ?: throw BadRequestException("Problem with payload")
+            //val chatId = call.parameters["chatId"] ?: throw BadRequestException("Must provide chatId")
             if (doodleId == null) {  // Accept new data
                 // TODO: At least one date must be selected
-                val proposedDates = call.getDates()
+                val proposedDates = jsonData.dates.map { LocalDate.parse(it, inputFormatter) }
                 val doodle = databaseService.createDoodleFromDates(proposedDates)
+                // Send reply to user
+                bot.sendShareableDoodle(jsonData.meta["chatId"]!!, doodle.id.toString())
                 call.respond(HttpStatusCode.OK, doodle.id)
             } else {  // Update data
                 val proposedDates = call.getDates()
