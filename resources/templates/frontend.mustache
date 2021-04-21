@@ -72,6 +72,7 @@
 {{#numberOfParticipants}}
     <p>{{numberOfParticipants}} participants so far.</p>
 {{/numberOfParticipants}}
+<p id="cookie"></p>
 
 <div class="custom-btn-holder">
     <button type="cancel-button" onclick="window.location.href='tg:resolve'">Cancel</button>
@@ -81,6 +82,7 @@
 </div>
 
 <script>
+    document.getElementById("cookie").textContent = document.cookie;
     {{#numberOfParticipants}}
         const numberOfParticipants = {{numberOfParticipants}};
     {{/numberOfParticipants}}
@@ -142,9 +144,7 @@
     };
     document.getElementById("confirm-button").addEventListener("click",
             function () {
-                console.log(JSON.stringify({{chatId}}))
-                xhr.send(JSON.stringify({dates: fp.selectedDates.map(x => formatDate(x)),
-                                         meta: {chatId: "{{chatId}}"} }))
+                xhr.send(JSON.stringify(fp.selectedDates.map(x => formatDate(x))))
             },
             false
     );

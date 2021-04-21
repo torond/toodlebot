@@ -7,8 +7,6 @@ import java.util.Properties
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
-data class JsonData(val dates: List<String>, val meta: Map<String, String>)
-
 object HashUtil {
     private val sha256Hmac = Mac.getInstance("HmacSHA256")
 
@@ -40,7 +38,7 @@ data class LoginData(
             if (photo_url != null) "photo_url=${photo_url}" else null,
             if (username != null) "username=${username}" else null
         ).joinToString("\n")
-        assert(hash == HashUtil.createHash(dataCheckString))
+        //assert(hash == HashUtil.createHash(dataCheckString))
     }
 }
 
@@ -59,4 +57,6 @@ object Env {
         botToken = props.getProperty("bot_token")
     }
 }
+
+data class LoginSession(val username: String, val auth_date: String)
 

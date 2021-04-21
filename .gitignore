@@ -1,5 +1,6 @@
 # Custom
 environment.properties
+.idea/codeStyles/codeStyleConfig.xml
 
 # Created by https://www.toptal.com/developers/gitignore/api/java,macos,linux,xcode,gradle,kotlin,windows,intellij,visualstudiocode,database
 # Edit at https://www.toptal.com/developers/gitignore?templates=java,macos,linux,xcode,gradle,kotlin,windows,intellij,visualstudiocode,database
