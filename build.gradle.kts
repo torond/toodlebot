@@ -2,13 +2,13 @@ import org.jetbrains.kotlin.gradle.dsl.Coroutines
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 val ktor_version="1.4.1"
-val kotlin_version="1.4.10"
+val kotlin_version="1.4.20"
 val logback_version="1.2.1"
 val exposed_version="0.27.1"
 
 plugins {
     application
-    kotlin("jvm") version "1.4.10"
+    kotlin("jvm") version "1.4.20"
 }
 
 group = "io.doodlebot"
@@ -33,7 +33,7 @@ dependencies {
     implementation("io.ktor:ktor-mustache:$ktor_version")
     implementation("io.ktor:ktor-gson:$ktor_version")
     testImplementation("io.ktor:ktor-server-tests:$ktor_version")
-    implementation("com.github.elbekD:kt-telegram-bot:1.3.5")
+    implementation("com.github.elbekD:kt-telegram-bot:1.3.8")
     implementation("org.jetbrains.exposed:exposed-core:$exposed_version")
     implementation("org.jetbrains.exposed:exposed-dao:$exposed_version")
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposed_version")
