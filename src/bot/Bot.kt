@@ -73,5 +73,4 @@ fun Bot.sendShareableDoodle(chatId: String, doodleId: String) {
             )
         )
     )
-
 }
