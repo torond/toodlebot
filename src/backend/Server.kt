@@ -69,7 +69,7 @@ fun Application.module(testing: Boolean = false) {
     }
     install(Sessions) { cookie<LoginData>("LOGIN_SESSION", storage = SessionStorageMemory()) }
 
-    DatabaseFactory.init()
+    DatabaseFactory  // To trigger init block. Is there a better way to do this?
     val databaseService = DatabaseService()
     val inputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
@@ -225,8 +225,12 @@ fun Application.module(testing: Boolean = false) {
             val loginData = call.getAndVerifyTelegramLoginData()
             call.setLoginSession(loginData)
 
+            val newParticipant = NewParticipant(loginData.username)
+            val participant = databaseService.addParticipantIfNotExisting(newParticipant)
+
             val proposedDates = databaseService.getProposedDatesByDoodleId(doodleId).map { it.doodleDate }
-            val mustacheMapping = buildMustacheMapping(DoodleConfig.ANSWER, enabledDates = proposedDates, doodleId = doodleId)
+            val yesDates = databaseService.getYesDatesByDoodleIdAndParticipantUsername(doodleId, loginData.username)  // If there are dates associated to this username and doodleId, returns them. Else empty list.
+            val mustacheMapping = buildMustacheMapping(DoodleConfig.ANSWER, enabledDates = proposedDates, defaultDates = yesDates, doodleId = doodleId)
             call.respond(MustacheContent(TEMPLATE_NAME, mustacheMapping))
         }
 
@@ -234,20 +238,21 @@ fun Application.module(testing: Boolean = false) {
         // Accept new data & update data
         post("/answer/{doodleId?}") {
             // TODO: Check if proposedDates containsAll answeredDates
-            // TODO: This also needs to accept edits on answers
-            // TODO: Implement auth, to use real data
             val doodleId = call.getDoodleId()
             val yesDates = call.getDates()
             val loginData = call.getLoginSession()
 
-            val newParticipant = NewParticipant(LocalTime.now().toString())
-            val participant = databaseService.addParticipantIfNotExisting(newParticipant)
+            // Update or add participations
+            val participant = databaseService.getParticipantByUsername(loginData.username)
+            if (databaseService.hasNotAnswered(doodleId, participant)) {
+                databaseService.addParticipations(doodleId, participant, yesDates)
+                call.respond(HttpStatusCode.OK)
+            } else {
+                databaseService.updateParticipations(doodleId, participant, yesDates)
+                call.respond(HttpStatusCode.OK)
+            }
 
-            // Add Participations
-            // TODO: databaseService.updateParticipations(doodleId, participant, yesDates) needs auth
-            databaseService.addParticipations(doodleId, participant, yesDates)
 
-            call.respond(HttpStatusCode.OK)
         }
 
         /** Endpoint for closing a Doodle */

@@ -135,7 +135,17 @@ class DatabaseService {
     }
 
     /**
+     * Returns true iff [participant] has not yet answered the Doodle corresponding to [doodleId], i.e. if [addParticipations] was not executed.
+     */
+    suspend fun hasNotAnswered(doodleId: UUID, participant: Participant): Boolean = dbQuery{
+        (DoodleInfos crossJoin Participations).select {
+            (DoodleInfos.id eq doodleId) and (DoodleInfos.id eq Participations.doodleInfo) and (Participations.participant eq participant.id) and (Participations.doodleDate eq DatabaseFactory.dummyDateId)
+        }.empty()
+    }
+
+    /**
      * Adds participation entries for the [dates] and the [participant] to the Doodle corresponding to [doodleId].
+     * Adds dummy date to mark that [participant] has answered this Doodle already.
      */
     suspend fun addParticipations(doodleId: UUID, participant: Participant, dates: List<LocalDate>) {
         val dateIds = getDateIdsByDates(dates)
@@ -147,8 +157,12 @@ class DatabaseService {
                 this[Participations.doodleInfo] = doodleId
                 this[Participations.participant] = participant.id
             }
+            Participations.insert {
+                it[this.doodleDate] = DatabaseFactory.dummyDateId
+                it[this.doodleInfo] = doodleId
+                it[this.participant] = participant.id
+            }
         }
-        // TODO: Check if below is ok (ok, if participant is new to this Doodle)
         dbQuery {
             DoodleInfos.update({DoodleInfos.id eq doodleId}) {
                 with(SqlExpressionBuilder) {
@@ -167,12 +181,14 @@ class DatabaseService {
         val oldDates = participations
                 .filter {it.value.contains(EntityID(participant.id, Participants)) }
                 .map { it.key }
-        val oldDateIds = getDateIdsByDates(oldDates)
+        val oldDateIds = getDateIdsByDates(oldDates).minus(DatabaseFactory.dummyDateId)  // Keep dummy date
         val toBeDeleted = oldDateIds.minus(newDateIds)
         val toBeAdded = newDateIds.minus(oldDateIds)
         dbQuery {
             checkDoodleIsOpen(doodleId)
             Participations.deleteWhere { (Participations.doodleInfo eq doodleId) and (Participations.participant eq participant.id) and (Participations.doodleDate inList toBeDeleted) }
+        }
+        dbQuery {
             Participations.batchInsert(toBeAdded) {
                 this[Participations.doodleDate] = it
                 this[Participations.doodleInfo] = doodleId
@@ -191,6 +207,35 @@ class DatabaseService {
         (DoodleInfos crossJoin Participations crossJoin DoodleDates).select {
             (DoodleInfos.id eq doodleId) and (DoodleInfos.id eq Participations.doodleInfo) and (DoodleDates.id eq Participations.doodleDate)
         }.groupBy({it[DoodleDates.doodleDate]}, {it[Participations.participant]})
+    }
+
+    /**
+     * Retrieves the a participant given its [username].
+     */
+    suspend fun getParticipantByUsername(username: String): Participant = dbQuery {
+        Participants.select {
+            Participants.name eq username
+        }.mapNotNull { toParticipant(it) }.singleOrNull() ?: throw NotFoundException("Participant with username $username not found")
+    }
+
+    /**
+     * Retrieves the [EntityID] of a participant given its [username].
+     */
+    private suspend fun getParticipantIdByUsername(username: String): EntityID<Int> = dbQuery {
+        Participants.select {
+            Participants.name eq username
+        }.mapNotNull { row -> row[Participants.id] }.singleOrNull() ?: throw NotFoundException("Participant with username $username not found")
+    }
+
+    /**
+     * Retrieves the (already) selected yesDates of a participant with [username] in a Doodle corresponding to [doodleId]
+     */
+    suspend fun getYesDatesByDoodleIdAndParticipantUsername(doodleId: UUID, username: String): List<LocalDate> {
+        val participations = getParticipationsByDoodleId(doodleId)
+        val participantId = getParticipantIdByUsername(username)
+        return participations.filterValues { participantIds -> participantId in participantIds }
+            .map { k -> k.key }
+            .toList()
     }
 
     /**

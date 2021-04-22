@@ -35,12 +35,12 @@ fun setup(): Bot {
         } else {  // Bot was added to a group chat
             bot.sendMessage(
                 msg.chat.id,
-                "Answer the Doodle with the button below.",
+                "Answer the Doodle with the button below. You can also edit your answer.",
                 markup = InlineKeyboardMarkup(
                     KeyboardFactory.inlineMarkup(
                         listOf(
                             InlineKeyboardButton(
-                                "Answer Doodle",
+                                "Answer Doodle / Edit Answer",
                                 login_url = LoginUrl(
                                     "http://${Env.localIp}:8088/answer/$value",
                                     request_write_access = true
