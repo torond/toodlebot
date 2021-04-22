@@ -49,12 +49,14 @@ object Env {
     val localIp: String
     val botName: String
     val botToken: String
+    val botUsername: String
 
     init {
         props.load(inputStream)
         localIp = props.getProperty("local_ip")
         botName = props.getProperty("bot_name")
         botToken = props.getProperty("bot_token")
+        botUsername = props.getProperty("bot_username")
     }
 }
 

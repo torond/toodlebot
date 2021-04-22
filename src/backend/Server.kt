@@ -4,6 +4,7 @@ import com.github.mustachejava.DefaultMustacheFactory
 import io.doodlebot.backend.model.NewParticipant
 import io.doodlebot.backend.service.*
 import io.doodlebot.bot.sendShareableDoodle
+import io.doodlebot.bot.sendViewButton
 import io.ktor.application.*
 import io.ktor.features.*
 import io.ktor.features.ContentTransformationException
@@ -164,6 +165,7 @@ fun Application.module(testing: Boolean = false) {
         get("/setup/{doodleId?}") {
             // TODO: When admin removes dates, also remove corresponding participant answers
             // TODO: Check for existing session and if user is authorized to access this (is admin)
+            // -> Only if doodleId is given, otherwise it counts as a new Doodle
             val doodleId = call.getDoodleIdOrNull()
             val loginData = call.getAndVerifyTelegramLoginData()
             println(loginData)
@@ -252,6 +254,7 @@ fun Application.module(testing: Boolean = false) {
         /** Accepts final dates of a Doodle*/
         // Accept new data, no updates!
         post("/close/{doodleId?}") {
+            val loginData = call.sessions.get<LoginData>() ?: throw BadRequestException("No session data")
             val doodleId = call.getDoodleId()
             val finalDates = call.getDates()
             databaseService.markDatesAsFinal(doodleId, finalDates)
@@ -259,6 +262,7 @@ fun Application.module(testing: Boolean = false) {
 
             // Redirect admin to /view/{doodleId}
             //call.respondRedirect("/view/${doodleId}")
+            bot.sendViewButton(loginData.id!!, doodleId.toString())
             call.respond(HttpStatusCode.OK)
         }
 

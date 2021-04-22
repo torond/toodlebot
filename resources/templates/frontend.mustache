@@ -139,7 +139,7 @@
             alert('Request failed. Returned status of ' + xhr.status);
         } else {
             console.log(xhr.response)
-            window.location.href='tg://msg_url?'+xhr.response
+            window.location.href='tg:resolve'
         }
     };
     document.getElementById("confirm-button").addEventListener("click",
