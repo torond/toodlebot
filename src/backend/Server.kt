@@ -138,7 +138,6 @@ fun Application.module(testing: Boolean = false) {
 
         /** Endpoint for setting up and editing the initial dates of a Doodle */
         get("/setup/{doodleId?}") {
-            // TODO: When admin removes dates, also remove corresponding participant answers
             // TODO: Check for existing session and if user is authorized to access this (is admin)
             // -> Only if doodleId is given, otherwise it counts as a new Doodle
             val doodleId = call.getDoodleIdOrNull()
