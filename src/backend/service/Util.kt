@@ -20,23 +20,23 @@ object HashUtil {
 }
 
 data class LoginData(
-    val auth_date: String? = null,
+    val auth_date: String,
     val first_name: String? = null,
-    val id: String? = null,
+    val id: String,
     val last_name: String? = null,
     val photo_url: String? = null,
-    val username: String? = null,
-    val hash: String? = null
+    val username: String,
+    val hash: String
 ) {
     init {
         // Verify Telegram data
         val dataCheckString = listOfNotNull(
-            if (auth_date != null) "auth_date=${auth_date}" else null,
+            "auth_date=${auth_date}",
             if (first_name != null) "first_name=${first_name}" else null,
-            if (id != null) "id=${id}" else null,
+            "id=${id}",
             if (last_name != null) "last_name=${last_name}" else null,
             if (photo_url != null) "photo_url=${photo_url}" else null,
-            if (username != null) "username=${username}" else null
+            "username=${username}"
         ).joinToString("\n")
         //assert(hash == HashUtil.createHash(dataCheckString))
     }
