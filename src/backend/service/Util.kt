@@ -46,15 +46,15 @@ object Env {
     // Holds data from environment.properties
     private val props = Properties()
     private val inputStream = FileInputStream("environment.properties")
-    val localIp: String
-    val botName: String
+    val host: String
+    val port: String
     val botToken: String
     val botUsername: String
 
     init {
         props.load(inputStream)
-        localIp = props.getProperty("local_ip")
-        botName = props.getProperty("bot_name")
+        host = props.getProperty("host")
+        port = props.getProperty("port")
         botToken = props.getProperty("bot_token")
         botUsername = props.getProperty("bot_username")
     }
