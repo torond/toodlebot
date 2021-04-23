@@ -144,17 +144,13 @@ fun Application.module(testing: Boolean = false) {
             val loginData = call.getAndVerifyTelegramLoginData()
             call.setLoginSession(loginData)
 
-            if (doodleId == null) {  // No previous data
+            if (doodleId == null) {  // No previous data, create Doodle
                 call.respond(MustacheContent(TEMPLATE_NAME, mapOf("config" to DoodleConfig.SETUP)))
-            } else {  // Show previous data
-                if (databaseService.doodleIsClosed(doodleId)) {
-                    call.respondRedirect("/view", false)
-                } else {
-                    databaseService.assertIsAdmin(doodleId, loginData.username)
-                    val proposedDates = databaseService.getProposedDatesByDoodleId(doodleId).map { it.doodleDate }
-                    val mustacheMapping = buildMustacheMapping(DoodleConfig.SETUP, defaultDates = proposedDates, doodleId = doodleId)
-                    call.respond(MustacheContent(TEMPLATE_NAME, mustacheMapping))
-                }
+            } else {  // Show previous data, edit Doodle
+                databaseService.assertIsAdmin(doodleId, loginData.username)
+                val proposedDates = databaseService.getProposedDatesByDoodleId(doodleId).map { it.doodleDate }
+                val mustacheMapping = buildMustacheMapping(DoodleConfig.SETUP, defaultDates = proposedDates, doodleId = doodleId)
+                call.respond(MustacheContent(TEMPLATE_NAME, mustacheMapping))
             }
         }
 
