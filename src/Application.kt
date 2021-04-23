@@ -17,6 +17,6 @@ fun main() {
     }*/
     Env  // To make sure that Env is initialized before anything else, e.g. HashUtil
     thread(start=true) {
-        embeddedServer(Netty, host="0.0.0.0", port = 8088, module = Application::module).start(wait = true)
+        embeddedServer(Netty, host="0.0.0.0", port = Env.port.toInt(), module = Application::module).start(wait = true)
     } //, watchPaths = listOf("/DoodleBotWebBackend/")
 }

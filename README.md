@@ -7,14 +7,14 @@ To use this bot, message [@thedatefinderbot](t.me/thedatefinderbot) to get start
 Follow these steps if you want to set up an instance for yourself.
 Create a file `environment.properties` to the repository root with the following contents:
 ```
-local_ip=<Local ip address of the machine the application is running on>
-bot_name=<Name of the Telegram bot e.g. DateFinderBot>
+host=<Local ip address of the machine the application is running on e.g. http://123.456.789.000>
+port=<port the app should run on e.g. 8088>
 bot_username=<Name of the Telegram bot (without @) e.g. thedatefinderbot>
 bot_token=<Token of the Telegram bot>
 ```
 
 Use `/setdomain` in BotFather to enable Login URL.
-For development purposes, this should be the same as `local_ip` above.
+For development purposes, this should be the same as the ip in `host` above (e.g. `123.456.789.000`).
 
 For more information on the data flow between users, server and bot see the [Data Flow](#data-flow) section.
 

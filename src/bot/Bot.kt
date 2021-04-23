@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
 fun setup(): Bot {
 
     val bot = Bot.createPolling(Env.botUsername, Env.botToken)
-    println("Server URL for setup: http://${Env.localIp}:8088/setup")
+    println("Server URL for setup: ${Env.host}:${Env.port}/setup")
 
     bot.onCommand("/start") { msg, value ->
         if (value == null) {  // Someone creates a Doodle
@@ -26,7 +26,7 @@ fun setup(): Bot {
                         listOf(
                             InlineKeyboardButton(
                                 "Create Doodle",
-                                login_url = LoginUrl("http://${Env.localIp}:8088/setup", request_write_access = true)
+                                login_url = LoginUrl("${Env.host}:${Env.port}/setup", request_write_access = true)
                             )
                         )
                     )
@@ -42,7 +42,7 @@ fun setup(): Bot {
                             InlineKeyboardButton(
                                 "Answer Doodle / Edit Answer",
                                 login_url = LoginUrl(
-                                    "http://${Env.localIp}:8088/answer/$value",
+                                    "${Env.host}:${Env.port}/answer/$value",
                                     request_write_access = true
                                 )
                             )
@@ -70,14 +70,14 @@ fun Bot.sendShareableDoodle(chatId: String, doodleId: String) {
                     InlineKeyboardButton(
                         "Edit Doodle",
                         login_url = LoginUrl(
-                            "http://${Env.localIp}:8088/setup/$doodleId",
+                            "${Env.host}:${Env.port}/setup/$doodleId",
                             request_write_access = true
                         )
                     ),
                     InlineKeyboardButton(
                         "Close Doodle",
                         login_url = LoginUrl(
-                            "http://${Env.localIp}:8088/close/$doodleId",
+                            "${Env.host}:${Env.port}/close/$doodleId",
                             request_write_access = true
                         )
                     )
@@ -97,7 +97,7 @@ fun Bot.sendViewButton(chatId: String, doodleId: String) {
                     InlineKeyboardButton(
                         "View Doodle",
                         login_url = LoginUrl(
-                            "http://${Env.localIp}:8088/view/$doodleId",
+                            "${Env.host}:${Env.port}/view/$doodleId",
                             request_write_access = true
                         )
                     )
