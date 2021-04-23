@@ -68,6 +68,13 @@ fun Bot.sendShareableDoodle(chatId: String, doodleId: String) {
                         url = "https://t.me/${Env.botUsername}?startgroup=$doodleId"
                     ),
                     InlineKeyboardButton(
+                        "Edit Doodle",
+                        login_url = LoginUrl(
+                            "http://${Env.localIp}:8088/setup/$doodleId",
+                            request_write_access = true
+                        )
+                    ),
+                    InlineKeyboardButton(
                         "Close Doodle",
                         login_url = LoginUrl(
                             "http://${Env.localIp}:8088/close/$doodleId",
