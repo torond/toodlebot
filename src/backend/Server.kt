@@ -62,7 +62,7 @@ fun Application.module(testing: Boolean = false) {
             log.warn(cause.message)
         }
         exception<AssertionError> { cause ->
-            call.respond(HttpStatusCode.Forbidden)
+            call.respond(HttpStatusCode.Forbidden)  // If Telegram data could not be verified
             log.warn(cause.message)
         }
         // UnauthorizedException if /setup/{doodleId} is queried by non-admin
@@ -150,6 +150,7 @@ fun Application.module(testing: Boolean = false) {
                 if (databaseService.doodleIsClosed(doodleId)) {
                     call.respondRedirect("/view", false)
                 } else {
+                    databaseService.assertIsAdmin(doodleId, loginData.username)
                     val proposedDates = databaseService.getProposedDatesByDoodleId(doodleId).map { it.doodleDate }
                     val mustacheMapping = buildMustacheMapping(DoodleConfig.SETUP, defaultDates = proposedDates, doodleId = doodleId)
                     call.respond(MustacheContent(TEMPLATE_NAME, mustacheMapping))
@@ -166,11 +167,12 @@ fun Application.module(testing: Boolean = false) {
             if (doodleId == null) {  // Accept new data
                 // TODO: At least one date must be selected
                 val proposedDates = call.getDates()
-                val doodle = databaseService.createDoodleFromDates(proposedDates)
+                val doodle = databaseService.createDoodleFromDates(proposedDates, loginData.username)
                 // Send reply to user
                 bot.sendShareableDoodle(loginData.id, doodle.id.toString())
                 call.respond(HttpStatusCode.OK, doodle.id)
             } else {  // Update data
+                databaseService.assertIsAdmin(doodleId, loginData.username)
                 val proposedDates = call.getDates()
                 databaseService.updateDatesOfDoodle(doodleId, proposedDates)
                 call.respond(HttpStatusCode.OK)
@@ -225,6 +227,7 @@ fun Application.module(testing: Boolean = false) {
             val loginData = call.getAndVerifyTelegramLoginData()
             call.setLoginSession(loginData)
 
+            databaseService.assertIsAdmin(doodleId, loginData.username)
             val proposedDates = databaseService.getProposedDatesByDoodleId(doodleId).map { it.doodleDate }
             val participations = databaseService.getParticipationsByDoodleId(doodleId)
             val numberOfParticipants = databaseService.getDoodleById(doodleId).numberOfParticipants
@@ -242,6 +245,7 @@ fun Application.module(testing: Boolean = false) {
             val doodleId = call.getDoodleId()
             val loginData = call.getLoginSession()
 
+            databaseService.assertIsAdmin(doodleId, loginData.username)
             val finalDates = call.getDates()
             databaseService.markDatesAsFinal(doodleId, finalDates)
             databaseService.markDoodleAsClosed(doodleId)

@@ -15,11 +15,12 @@ class DatabaseService {
      * Inserts a new [DoodleInfo] object and links the corresponding [dates].
      * Returns the created [DoodleInfo] object for accessing its id.
      */
-    suspend fun createDoodleFromDates(dates: List<LocalDate>): DoodleInfo {
+    suspend fun createDoodleFromDates(dates: List<LocalDate>, adminUsername: String): DoodleInfo {
         val doodleId = dbQuery {
             DoodleInfos.insertAndGetId {
-                it[isClosed] = Op.FALSE
-                it[numberOfParticipants]  = 0
+                it[this.isClosed] = Op.FALSE
+                it[this.numberOfParticipants] = 0
+                it[this.adminUsername] = adminUsername
             }
         }
         val dateIds = addDatesIfNotExistingAndGetIds(dates)
@@ -293,13 +294,27 @@ class DatabaseService {
     }
 
     /**
+     * Returns true iff [adminUsername] is the admin of the Doodle corresponding to [doodleId].
+     */
+    suspend fun assertIsAdmin(doodleId: UUID, adminUsername: String) {
+        if (dbQuery {
+            checkDoodleExists(doodleId)
+            DoodleInfos.select { DoodleInfos.id eq doodleId }.map { it[DoodleInfos.adminUsername] != adminUsername }.single()
+        }) {
+            throw BadRequestException("Not an admin, access denied.")
+        }
+    }
+
+
+    /**
      * Converts the given [row] to a [DoodleInfo].
      */
     private fun toDoodleInfo (row: ResultRow): DoodleInfo =
         DoodleInfo(
             id = row[DoodleInfos.id].value,
             isClosed = row[DoodleInfos.isClosed],
-            numberOfParticipants = row[DoodleInfos.numberOfParticipants]
+            numberOfParticipants = row[DoodleInfos.numberOfParticipants],
+            adminUsername = row[DoodleInfos.adminUsername]
         )
 
     /**
