@@ -148,7 +148,7 @@ fun Application.module(testing: Boolean = false) {
         intercept(ApplicationCallPipeline.Call) {
             this.call.getDoodleIdOrNull()?.let {
                 if (!this.call.request.uri.startsWith("/view") && databaseService.doodleIsClosed(it)) {
-                    this.call.respondRedirect("/view/$it")
+                    this.call.respondRedirect("/view/$it?${this.call.request.queryString()}")
                     this.finish()
                 }
             }
