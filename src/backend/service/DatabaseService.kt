@@ -41,7 +41,8 @@ class DatabaseService {
     suspend fun getDoodleById(doodleId: UUID): DoodleInfo = dbQuery {
         DoodleInfos.select {
             DoodleInfos.id eq doodleId
-        }.mapNotNull { toDoodleInfo(it) }.singleOrNull() ?: throw NotFoundException("DoodleInfo with id $doodleId not found")
+        }.mapNotNull { toDoodleInfo(it) }.singleOrNull()
+            ?: throw NotFoundException("DoodleInfo with id $doodleId not found")
     }
 
     /**
@@ -52,7 +53,8 @@ class DatabaseService {
         for (date in dates) {
             val insertedId = dbQuery {
                 DoodleDates.insertIgnoreAndGetId { it[doodleDate] = date }
-            } ?: dbQuery { DoodleDates.select { (DoodleDates.doodleDate eq date) }
+            } ?: dbQuery {
+                DoodleDates.select { (DoodleDates.doodleDate eq date) }
                     .map { row -> row[DoodleDates.id] }
                     .single()
             }
@@ -79,6 +81,15 @@ class DatabaseService {
                 this[InfoJoinDate.doodleInfo] = doodleId
                 this[InfoJoinDate.isFinal] = Op.FALSE
             }
+        }
+    }
+
+    /**
+     * Updates the title of the Doodle corresponding to [doodleId] to be [newTitle] if it changed.
+     */
+    suspend fun updateTitleOfDoodle(doodleId: UUID, newTitle: String) = dbQuery {
+        DoodleInfos.update({ DoodleInfos.id eq doodleId }) {
+            it[title] = newTitle
         }
     }
 
@@ -111,8 +122,8 @@ class DatabaseService {
             Participants.insertIgnoreAndGetId { it[name] = participant.name }
         } ?: dbQuery {
             Participants.select { (Participants.name eq participant.name) }
-                    .map { row -> row[Participants.id] }
-                    .single()
+                .map { row -> row[Participants.id] }
+                .single()
         }
         return dbQuery {
             Participants.select {
@@ -128,8 +139,8 @@ class DatabaseService {
         val dateIds = dates.map {
             dbQuery {
                 DoodleDates.select { (DoodleDates.doodleDate eq it) }
-                        .map { row -> row[DoodleDates.id] }
-                        .single()
+                    .map { row -> row[DoodleDates.id] }
+                    .single()
             }
         }
         if (dateIds.size != dates.size) throw NotFoundException("One ore more dates not found, given: $dates, found ids: $dateIds")
@@ -139,7 +150,7 @@ class DatabaseService {
     /**
      * Returns true iff [participant] has not yet answered the Doodle corresponding to [doodleId], i.e. if [addParticipations] was not executed.
      */
-    suspend fun hasNotAnswered(doodleId: UUID, participant: Participant): Boolean = dbQuery{
+    suspend fun hasNotAnswered(doodleId: UUID, participant: Participant): Boolean = dbQuery {
         (DoodleInfos crossJoin Participations).select {
             (DoodleInfos.id eq doodleId) and (DoodleInfos.id eq Participations.doodleInfo) and (Participations.participant eq participant.id) and (Participations.doodleDate eq DatabaseFactory.dummyDateId)
         }.empty()
@@ -166,7 +177,7 @@ class DatabaseService {
             }
         }
         dbQuery {
-            DoodleInfos.update({DoodleInfos.id eq doodleId}) {
+            DoodleInfos.update({ DoodleInfos.id eq doodleId }) {
                 with(SqlExpressionBuilder) {
                     it[numberOfParticipants] = numberOfParticipants + 1
                 }
@@ -181,8 +192,8 @@ class DatabaseService {
         val newDateIds = getDateIdsByDates(newDates)
         val participations = getParticipationsByDoodleId(doodleId)
         val oldDates = participations
-                .filter {it.value.contains(EntityID(participant.id, Participants)) }
-                .map { it.key }
+            .filter { it.value.contains(EntityID(participant.id, Participants)) }
+            .map { it.key }
         val oldDateIds = getDateIdsByDates(oldDates).minus(DatabaseFactory.dummyDateId)  // Keep dummy date
         val toBeDeleted = oldDateIds.minus(newDateIds)
         val toBeAdded = newDateIds.minus(oldDateIds)
@@ -208,7 +219,7 @@ class DatabaseService {
         checkDoodleExists(doodleId)
         (DoodleInfos crossJoin Participations crossJoin DoodleDates).select {
             (DoodleInfos.id eq doodleId) and (DoodleInfos.id eq Participations.doodleInfo) and (DoodleDates.id eq Participations.doodleDate)
-        }.groupBy({it[DoodleDates.doodleDate]}, {it[Participations.participant]})
+        }.groupBy({ it[DoodleDates.doodleDate] }, { it[Participations.participant] })
     }
 
     /**
@@ -217,7 +228,8 @@ class DatabaseService {
     suspend fun getParticipantByUsername(username: String): Participant = dbQuery {
         Participants.select {
             Participants.name eq username
-        }.mapNotNull { toParticipant(it) }.singleOrNull() ?: throw NotFoundException("Participant with username $username not found")
+        }.mapNotNull { toParticipant(it) }.singleOrNull()
+            ?: throw NotFoundException("Participant with username $username not found")
     }
 
     /**
@@ -226,7 +238,8 @@ class DatabaseService {
     private suspend fun getParticipantIdByUsername(username: String): EntityID<Int> = dbQuery {
         Participants.select {
             Participants.name eq username
-        }.mapNotNull { row -> row[Participants.id] }.singleOrNull() ?: throw NotFoundException("Participant with username $username not found")
+        }.mapNotNull { row -> row[Participants.id] }.singleOrNull()
+            ?: throw NotFoundException("Participant with username $username not found")
     }
 
     /**
@@ -248,7 +261,7 @@ class DatabaseService {
         for (dateId in dateIds) {
             dbQuery {
                 checkDoodleIsOpen(doodleId)
-                InfoJoinDate.update({(InfoJoinDate.doodleInfo eq doodleId) and (InfoJoinDate.doodleDate eq dateId)}) {
+                InfoJoinDate.update({ (InfoJoinDate.doodleInfo eq doodleId) and (InfoJoinDate.doodleDate eq dateId) }) {
                     it[isFinal] = Op.TRUE
                 }
             }
@@ -260,7 +273,7 @@ class DatabaseService {
      */
     suspend fun markDoodleAsClosed(doodleId: UUID) = dbQuery {
         checkDoodleIsOpen(doodleId)
-        DoodleInfos.update({DoodleInfos.id eq doodleId}) {
+        DoodleInfos.update({ DoodleInfos.id eq doodleId }) {
             it[isClosed] = Op.TRUE
         }
     }
@@ -299,9 +312,10 @@ class DatabaseService {
      */
     suspend fun assertIsAdmin(doodleId: UUID, adminUsername: String) {
         if (dbQuery {
-            checkDoodleExists(doodleId)
-            DoodleInfos.select { DoodleInfos.id eq doodleId }.map { it[DoodleInfos.adminUsername] != adminUsername }.single()
-        }) {
+                checkDoodleExists(doodleId)
+                DoodleInfos.select { DoodleInfos.id eq doodleId }.map { it[DoodleInfos.adminUsername] != adminUsername }
+                    .single()
+            }) {
             throw BadRequestException("Not an admin, access denied.")
         }
     }
@@ -309,7 +323,7 @@ class DatabaseService {
     /**
      * Converts the given [row] to a [DoodleInfo].
      */
-    private fun toDoodleInfo (row: ResultRow): DoodleInfo =
+    private fun toDoodleInfo(row: ResultRow): DoodleInfo =
         DoodleInfo(
             id = row[DoodleInfos.id].value,
             title = row[DoodleInfos.title],
@@ -321,7 +335,7 @@ class DatabaseService {
     /**
      * Converts the given [row] to a [DoodleDate].
      */
-    private fun toDoodleDate (row: ResultRow): DoodleDate =
+    private fun toDoodleDate(row: ResultRow): DoodleDate =
         DoodleDate(
             id = row[DoodleDates.id].value,
             doodleDate = row[DoodleDates.doodleDate]
@@ -330,7 +344,7 @@ class DatabaseService {
     /**
      * Converts the given [row] to a [Participant].
      */
-    private fun toParticipant (row: ResultRow): Participant =
+    private fun toParticipant(row: ResultRow): Participant =
         Participant(
             id = row[Participants.id].value,
             name = row[Participants.name]

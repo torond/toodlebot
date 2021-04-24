@@ -95,8 +95,11 @@
 
 <script>
     {{#config.isSetup}}
-    const defaultTitle = `Doodle from ${new Date().toDateString()}`
-    document.getElementById("titleInput").placeholder = `${defaultTitle} (Tap to change title)`
+        const defaultTitle = `Doodle from ${new Date().toDateString()}`
+        document.getElementById("titleInput").placeholder = `${defaultTitle} (Tap to change title)`
+        {{#title}}
+            document.getElementById("titleInput").value = "{{title}}"
+        {{/title}}
     {{/config.isSetup}}
 
     {{#numberOfParticipants}}
