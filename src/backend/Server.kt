@@ -209,15 +209,12 @@ fun Application.module(testing: Boolean = false) {
         // Clean slate & show previous state
         // UUID is mandatory
         get("/answer/{doodleId?}") {
-            // TODO: Authentication / recognize user -> For now only one user w/o authentication
-            // TODO: This also needs to show already chosen dates (defaultDates = yesDates), i.e. editing must be possible (auth first and retrieve answers if any)
-            // TODO: Get Participations (of all users) and show them in the calendar
             val doodleId = call.getDoodleId()
             val loginData = call.getAndVerifyTelegramLoginData()
             call.setLoginSession(loginData)
 
             val newParticipant = NewParticipant(loginData.username)
-            val participant = databaseService.addParticipantIfNotExisting(newParticipant)
+            databaseService.addParticipantIfNotExisting(newParticipant)
 
             val doodleInfo = databaseService.getDoodleById(doodleId)
             val proposedDates = databaseService.getProposedDatesByDoodleId(doodleId).map { it.doodleDate }
@@ -238,9 +235,9 @@ fun Application.module(testing: Boolean = false) {
         /** Accepts answer and their edits of a Doodle */
         // Accept new data & update data
         post("/answer/{doodleId?}") {
-            // TODO: Check if proposedDates containsAll answeredDates
             val doodleId = call.getDoodleId()
-            val yesDates = call.getDates()
+            val proposedDates = databaseService.getProposedDatesByDoodleId(doodleId).map { it.doodleDate }
+            val yesDates = call.getDates().intersect(proposedDates).toList()
             val loginData = call.getLoginSession()
 
             // Update or add participations
