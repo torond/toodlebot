@@ -149,6 +149,7 @@
                 }
             {{/finalDates}}
         },
+        {{#config.hasConfirmButton}}
         onChange: function(selectedDates, dateStr, instance) {
             if (selectedDates.length === 0) {
                 document.getElementById("confirm-button").disabled = true;
@@ -156,6 +157,7 @@
                 document.getElementById("confirm-button").disabled = false;
             }
         },
+        {{/config.hasConfirmButton}}
         {{#defaultDates}}defaultDate: [{{#content}}"{{.}}", {{/content}}],{{/defaultDates}}
         {{#enabledDates}}enable: [{{#content}}"{{.}}", {{/content}}],{{/enabledDates}}
     });
