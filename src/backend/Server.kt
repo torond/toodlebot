@@ -5,6 +5,7 @@ import io.doodlebot.backend.model.NewParticipant
 import io.doodlebot.backend.service.*
 import io.doodlebot.bot.sendShareableDoodle
 import io.doodlebot.bot.sendViewButton
+import io.doodlebot.bot.sendViewButtonToChats
 import io.ktor.application.*
 import io.ktor.features.*
 import io.ktor.features.ContentTransformationException
@@ -29,7 +30,11 @@ const val TEMPLATE_NAME = "frontend.mustache"
 @Suppress("unused") // Referenced in application.conf
 @kotlin.jvm.JvmOverloads
 fun Application.module(testing: Boolean = false) {
-    val bot = setup()
+    DatabaseFactory  // To trigger init block. Is there a better way to do this?
+    val databaseService = DatabaseService()
+    val inputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+
+    val bot = setup(databaseService)
     thread(start = true) {
         bot.start()
     }
@@ -67,10 +72,6 @@ fun Application.module(testing: Boolean = false) {
         // UnauthorizedException if /setup/{doodleId} is queried by non-admin
     }
     install(Sessions) { cookie<LoginData>("LOGIN_SESSION", storage = SessionStorageMemory()) }
-
-    DatabaseFactory  // To trigger init block. Is there a better way to do this?
-    val databaseService = DatabaseService()
-    val inputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
     fun ApplicationCall.getDoodleId(): UUID {
         this.parameters["doodleId"] ?: throw BadRequestException("Must provide id")
@@ -286,8 +287,9 @@ fun Application.module(testing: Boolean = false) {
             val finalDates = call.getDates()
             databaseService.markDatesAsFinal(doodleId, finalDates)
             databaseService.markDoodleAsClosed(doodleId)
+            val sharedGroupIds = databaseService.getChatIdsOfDoodle(doodleId)
 
-            bot.sendViewButton(loginData.id, doodleId.toString())
+            bot.sendViewButtonToChats(sharedGroupIds, doodleId.toString())
             call.respond(HttpStatusCode.OK)
         }
 

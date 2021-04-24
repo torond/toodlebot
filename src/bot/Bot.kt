@@ -7,11 +7,13 @@ import com.elbekD.bot.types.LoginUrl
 import com.elbekD.bot.util.isCommand
 import com.elbekD.bot.util.isMessage
 import com.elbekD.bot.util.keyboard.KeyboardFactory
+import io.doodlebot.backend.service.DatabaseService
 import io.doodlebot.backend.service.Env
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import java.util.*
 
-fun setup(): Bot {
+fun setup(databaseService: DatabaseService): Bot {
 
     val bot = Bot.createPolling(Env.botUsername, Env.botToken)
     println("Server URL for setup: ${Env.host}:${Env.port}/setup")
@@ -33,23 +35,29 @@ fun setup(): Bot {
                 )
             )
         } else {  // Bot was added to a group chat
-            bot.sendMessage(
-                msg.chat.id,
-                "Answer the Doodle with the button below. You can also edit your answer.",
-                markup = InlineKeyboardMarkup(
-                    KeyboardFactory.inlineMarkup(
-                        listOf(
-                            InlineKeyboardButton(
-                                "Answer Doodle / Edit Answer",
-                                login_url = LoginUrl(
-                                    "${Env.host}:${Env.port}/answer/$value",
-                                    request_write_access = true
+            // TODO: Check that input is not malicious, anyone can enter "/start somethingbad"
+            val doodleId = UUID.fromString(value)
+            val chatIds = databaseService.getChatIdsOfDoodle(doodleId)
+            if(!chatIds.contains(msg.chat.id)) {
+                databaseService.addChatIdToDoodle(doodleId, msg.chat.id)
+                bot.sendMessage(
+                    msg.chat.id,  // ID of the chosen group chat
+                    "Answer the Doodle with the button below. You can also edit your answer.",
+                    markup = InlineKeyboardMarkup(
+                        KeyboardFactory.inlineMarkup(
+                            listOf(
+                                InlineKeyboardButton(
+                                    "Answer Doodle / Edit Answer",
+                                    login_url = LoginUrl(
+                                        "${Env.host}:${Env.port}/answer/$value",
+                                        request_write_access = true
+                                    )
                                 )
                             )
                         )
                     )
                 )
-            )
+            }
         }
     }
 
@@ -105,4 +113,29 @@ fun Bot.sendViewButton(chatId: String, doodleId: String) {
             )
         )
     )
+}
+
+/**
+ * Sends buttons /view/<UUID> to the given chatIds
+ */
+fun Bot.sendViewButtonToChats(chatIds: List<Long>, doodleId: String) {
+    for (chatId in chatIds) {
+        this.sendMessage(
+            chatId,
+            "The Doodle was closed. Use the button to view the results.",
+            markup = InlineKeyboardMarkup(
+                KeyboardFactory.inlineMarkup(
+                    listOf(
+                        InlineKeyboardButton(
+                            "View Doodle",
+                            login_url = LoginUrl(
+                                "${Env.host}:${Env.port}/view/$doodleId",
+                                request_write_access = true
+                            )
+                        )
+                    )
+                )
+            )
+        )
+    }
 }
