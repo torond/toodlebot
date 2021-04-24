@@ -15,9 +15,10 @@ class DatabaseService {
      * Inserts a new [DoodleInfo] object and links the corresponding [dates].
      * Returns the created [DoodleInfo] object for accessing its id.
      */
-    suspend fun createDoodleFromDates(dates: List<LocalDate>, adminUsername: String): DoodleInfo {
+    suspend fun createDoodleFromDates(dates: List<LocalDate>, title: String, adminUsername: String): DoodleInfo {
         val doodleId = dbQuery {
             DoodleInfos.insertAndGetId {
+                it[this.title] = title
                 it[this.isClosed] = Op.FALSE
                 it[this.numberOfParticipants] = 0
                 it[this.adminUsername] = adminUsername
@@ -305,13 +306,13 @@ class DatabaseService {
         }
     }
 
-
     /**
      * Converts the given [row] to a [DoodleInfo].
      */
     private fun toDoodleInfo (row: ResultRow): DoodleInfo =
         DoodleInfo(
             id = row[DoodleInfos.id].value,
+            title = row[DoodleInfos.title],
             isClosed = row[DoodleInfos.isClosed],
             numberOfParticipants = row[DoodleInfos.numberOfParticipants],
             adminUsername = row[DoodleInfos.adminUsername]

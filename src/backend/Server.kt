@@ -31,7 +31,7 @@ const val TEMPLATE_NAME = "frontend.mustache"
 @kotlin.jvm.JvmOverloads
 fun Application.module(testing: Boolean = false) {
     val bot = setup()
-    thread(start=true) {
+    thread(start = true) {
         bot.start()
     }
     install(Mustache) { mustacheFactory = DefaultMustacheFactory(TEMPLATE_PATH) }
@@ -77,13 +77,19 @@ fun Application.module(testing: Boolean = false) {
         this.parameters["doodleId"] ?: throw BadRequestException("Must provide id")
         return UUID.fromString(this.parameters["doodleId"])
     }
+
     fun ApplicationCall.getDoodleIdOrNull(): UUID? {
         return this.parameters["doodleId"]?.let { UUID.fromString(it) }
     }
+
     suspend fun ApplicationCall.getDates(): List<LocalDate> {
         val raw = this.receiveOrNull<List<String>>() ?: throw BadRequestException("Must provide dates")
         return raw.map { LocalDate.parse(it, inputFormatter) }
     }
+
+    suspend fun ApplicationCall.getDatesAndTitle(): JsonData =
+        this.receiveOrNull() ?: throw BadRequestException("Must provide dates")
+
     fun ApplicationCall.getAndVerifyTelegramLoginData(): LoginData {
         // We know that auth_date, id, username and hash will be supplied by Telegram
         return LoginData(
@@ -96,27 +102,33 @@ fun Application.module(testing: Boolean = false) {
             this.request.queryParameters["hash"]!!
         )
     }
+
     fun ApplicationCall.getLoginSession(): LoginData {
         // TODO: Better logging
         val loginData = this.sessions.get<LoginData>() ?: throw BadRequestException("No session data provided")
         this.application.environment.log.debug("${this.request.httpMethod.value} to ${this.request.path()} by $loginData")
         return loginData
     }
+
     fun ApplicationCall.setLoginSession(loginData: LoginData) {
         // TODO: Better logging
         this.sessions.set(loginData)
         this.application.environment.log.debug("${this.request.httpMethod.value} to ${this.request.path()} by $loginData")
     }
 
-    fun buildMustacheMapping(config: DoodleConfig,
-                             enabledDates: List<LocalDate>? = null,
-                             defaultDates: List<LocalDate>? = null,
-                             finalDates: List<LocalDate>? = null,
-                             numberOfParticipants: Int? = null,
-                             participations: Map<LocalDate, List<EntityID<Int>>>? = null,
-                             doodleId: UUID? = null): Map<String, Any> {
+    fun buildMustacheMapping(
+        config: DoodleConfig,
+        title: String? = null,
+        doodleId: UUID? = null,
+        enabledDates: List<LocalDate>? = null,
+        defaultDates: List<LocalDate>? = null,
+        finalDates: List<LocalDate>? = null,
+        numberOfParticipants: Int? = null,
+        participations: Map<LocalDate, List<EntityID<Int>>>? = null
+    ): Map<String, Any> {
         val mappings: MutableList<Pair<String, Any>> = mutableListOf()
         mappings.add("config" to config)
+        if (title != null) mappings.add("title" to title)
         if (doodleId != null) mappings.add("doodleId" to doodleId)
         if (enabledDates != null) mappings.add("enabledDates" to mapOf("content" to enabledDates))
         if (defaultDates != null) mappings.add("defaultDates" to mapOf("content" to defaultDates))  // Maybe add ifNotNull
@@ -149,7 +161,10 @@ fun Application.module(testing: Boolean = false) {
             } else {  // Show previous data, edit Doodle
                 databaseService.assertIsAdmin(doodleId, loginData.username)
                 val proposedDates = databaseService.getProposedDatesByDoodleId(doodleId).map { it.doodleDate }
-                val mustacheMapping = buildMustacheMapping(DoodleConfig.SETUP, defaultDates = proposedDates, doodleId = doodleId)
+                val mustacheMapping = buildMustacheMapping(
+                    DoodleConfig.SETUP,
+                    defaultDates = proposedDates,
+                    doodleId = doodleId)
                 call.respond(MustacheContent(TEMPLATE_NAME, mustacheMapping))
             }
         }
@@ -162,15 +177,18 @@ fun Application.module(testing: Boolean = false) {
 
             if (doodleId == null) {  // Accept new data
                 // TODO: At least one date must be selected
-                val proposedDates = call.getDates()
-                val doodle = databaseService.createDoodleFromDates(proposedDates, loginData.username)
+                val jsonData = call.getDatesAndTitle()
+                val doodle = databaseService.createDoodleFromDates(
+                    jsonData.dates.map { LocalDate.parse(it, DateUtil.inputFormatter) },
+                    jsonData.title,
+                    loginData.username)
                 // Send reply to user
-                bot.sendShareableDoodle(loginData.id, doodle.id.toString())
+                bot.sendShareableDoodle(loginData.id, doodle.id.toString(), jsonData.title)
                 call.respond(HttpStatusCode.OK, doodle.id)
             } else {  // Update data
                 databaseService.assertIsAdmin(doodleId, loginData.username)
-                val proposedDates = call.getDates()
-                databaseService.updateDatesOfDoodle(doodleId, proposedDates)
+                val jsonData = call.getDatesAndTitle()
+                databaseService.updateDatesOfDoodle(doodleId, jsonData.dates.map { LocalDate.parse(it, DateUtil.inputFormatter) })
                 call.respond(HttpStatusCode.OK)
             }
         }
@@ -189,9 +207,19 @@ fun Application.module(testing: Boolean = false) {
             val newParticipant = NewParticipant(loginData.username)
             val participant = databaseService.addParticipantIfNotExisting(newParticipant)
 
+            val doodleInfo = databaseService.getDoodleById(doodleId)
             val proposedDates = databaseService.getProposedDatesByDoodleId(doodleId).map { it.doodleDate }
-            val yesDates = databaseService.getYesDatesByDoodleIdAndParticipantUsername(doodleId, loginData.username)  // If there are dates associated to this username and doodleId, returns them. Else empty list.
-            val mustacheMapping = buildMustacheMapping(DoodleConfig.ANSWER, enabledDates = proposedDates, defaultDates = yesDates, doodleId = doodleId)
+            val yesDates = databaseService.getYesDatesByDoodleIdAndParticipantUsername(
+                doodleId,
+                loginData.username
+            )  // If there are dates associated to this username and doodleId, returns them. Else empty list.
+            val mustacheMapping = buildMustacheMapping(
+                DoodleConfig.ANSWER,
+                enabledDates = proposedDates,
+                defaultDates = yesDates,
+                doodleId = doodleId,
+                title = doodleInfo.title
+            )
             call.respond(MustacheContent(TEMPLATE_NAME, mustacheMapping))
         }
 
@@ -224,14 +252,18 @@ fun Application.module(testing: Boolean = false) {
             call.setLoginSession(loginData)
 
             databaseService.assertIsAdmin(doodleId, loginData.username)
+            val doodleInfo = databaseService.getDoodleById(doodleId)
             val proposedDates = databaseService.getProposedDatesByDoodleId(doodleId).map { it.doodleDate }
             val participations = databaseService.getParticipationsByDoodleId(doodleId)
             val numberOfParticipants = databaseService.getDoodleById(doodleId).numberOfParticipants
-            val mustacheMapping = buildMustacheMapping(DoodleConfig.CLOSE,
-                    enabledDates = proposedDates,
-                    numberOfParticipants = numberOfParticipants,
-                    participations = participations,
-                    doodleId = doodleId)
+            val mustacheMapping = buildMustacheMapping(
+                DoodleConfig.CLOSE,
+                enabledDates = proposedDates,
+                numberOfParticipants = numberOfParticipants,
+                participations = participations,
+                doodleId = doodleId,
+                title = doodleInfo.title
+            )
             call.respond(MustacheContent(TEMPLATE_NAME, mustacheMapping))
         }
 
@@ -246,8 +278,6 @@ fun Application.module(testing: Boolean = false) {
             databaseService.markDatesAsFinal(doodleId, finalDates)
             databaseService.markDoodleAsClosed(doodleId)
 
-            // Redirect admin to /view/{doodleId}
-            //call.respondRedirect("/view/${doodleId}")
             bot.sendViewButton(loginData.id, doodleId.toString())
             call.respond(HttpStatusCode.OK)
         }
@@ -260,16 +290,20 @@ fun Application.module(testing: Boolean = false) {
             val loginData = call.getAndVerifyTelegramLoginData()
             call.setLoginSession(loginData)
 
+            val doodleInfo = databaseService.getDoodleById(doodleId)
             val participations = databaseService.getParticipationsByDoodleId(doodleId)
             val numberOfParticipants = databaseService.getDoodleById(doodleId).numberOfParticipants
             val proposedDates = databaseService.getProposedDatesByDoodleId(doodleId).map { it.doodleDate }
             val finalDates = databaseService.getFinalDatesByDoodleId(doodleId).map { it.doodleDate }
-            val mustacheMapping = buildMustacheMapping(DoodleConfig.VIEW,
-                    enabledDates = proposedDates,
-                    finalDates = finalDates,
-                    numberOfParticipants = numberOfParticipants,
-                    participations = participations,
-                    doodleId = doodleId)
+            val mustacheMapping = buildMustacheMapping(
+                DoodleConfig.VIEW,
+                enabledDates = proposedDates,
+                finalDates = finalDates,
+                numberOfParticipants = numberOfParticipants,
+                participations = participations,
+                doodleId = doodleId,
+                title = doodleInfo.title
+            )
             call.respond(MustacheContent(TEMPLATE_NAME, mustacheMapping))
         }
     }

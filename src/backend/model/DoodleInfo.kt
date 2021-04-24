@@ -4,12 +4,14 @@ import org.jetbrains.exposed.dao.id.UUIDTable
 import java.util.*
 
 object DoodleInfos: UUIDTable() {
+    val title = varchar("title", 255)
     val isClosed = bool("isClosed")
     val numberOfParticipants = integer("numberOfParticipants")
     val adminUsername = varchar("adminUsername", 255)
 }
 
 data class DoodleInfo(
+    val title: String,
     val id: UUID,
     val isClosed: Boolean = false,
     val numberOfParticipants: Int = 0,

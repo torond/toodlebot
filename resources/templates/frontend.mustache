@@ -60,39 +60,55 @@
             right: 5px;
             bottom: 5px;
         }
+
+        input {
+            width: 100%;
+            box-sizing: border-box;
+        }
     </style>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
 </head>
 <body>
+
+{{#config.isSetup}}
+<input type="text" id="titleInput">
+{{/config.isSetup}}
+{{^config.isSetup}}
+<div>{{title}}</div>
+{{/config.isSetup}}
+
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
 <div class="picker" id="pkr"></div>
 <p>{{config.description}}</p>
 
 {{#numberOfParticipants}}
-    <p>{{numberOfParticipants}} participants so far.</p>
+<p>{{numberOfParticipants}} participants so far.</p>
 {{/numberOfParticipants}}
-<p id="cookie"></p>
 
 <div class="custom-btn-holder">
     <button type="cancel-button" onclick="window.location.href='tg:resolve'">Cancel</button>
     {{#config.hasConfirmButton}}
-        <button id="confirm-button" type="button">Confirm</button>
+    <button id="confirm-button" type="button">Confirm</button>
     {{/config.hasConfirmButton}}
 </div>
 
 <script>
-    document.getElementById("cookie").textContent = document.cookie;
+    {{#config.isSetup}}
+    const defaultTitle = `Doodle from ${new Date().toDateString()}`
+    document.getElementById("titleInput").placeholder = `${defaultTitle} (Tap to change title)`
+    {{/config.isSetup}}
+
     {{#numberOfParticipants}}
-        const numberOfParticipants = {{numberOfParticipants}};
+    const numberOfParticipants = {{numberOfParticipants}};
     {{/numberOfParticipants}}
 
     {{#participations}}
-        const participations = { {{#content}}"{{key}}": {{value}}, {{/content}} };
+    const participations = { {{#content}}"{{key}}": {{value}}, {{/content}} };
     {{/participations}}
 
     {{#finalDates}}
-        const finalDates = [{{#content}}"{{.}}", {{/content}}];
+    const finalDates = [{{#content}}"{{.}}", {{/content}}];
     {{/finalDates}}
 
     /*function getNumberOfParticipants(date) {
@@ -110,7 +126,7 @@
         disableMobile: "true",
         static: true, //necessary?
         mode: "multiple",
-        onDayCreate: function(dObj, dStr, fp, dayElem){
+        onDayCreate: function (dObj, dStr, fp, dayElem) {
             var formattedDate = formatDate(dayElem.dateObj)
             {{#participations}}
                 participantsToday = participations[formattedDate];
@@ -130,7 +146,6 @@
     });
 
 
-
     xhr = new XMLHttpRequest();
     xhr.open('POST', '{{config.confirmRecipientUrl}}{{#doodleId}}/{{doodleId}}{{/doodleId}}');
     xhr.setRequestHeader('Content-Type', 'application/json');
@@ -139,12 +154,28 @@
             alert('Request failed. Returned status of ' + xhr.status);
         } else {
             console.log(xhr.response)
-            window.location.href='tg:resolve'
+            window.location.href = 'tg:resolve'
         }
     };
     document.getElementById("confirm-button").addEventListener("click",
             function () {
-                xhr.send(JSON.stringify(fp.selectedDates.map(x => formatDate(x))))
+                {{#config.isSetup}}
+                    const titleInput = document.getElementById('titleInput');
+                    if (!titleInput.value) {
+                        titleInput.value = defaultTitle;
+                    }
+                    xhr.send(JSON.stringify(
+                            {
+                                "dates": fp.selectedDates.map(x => formatDate(x)),
+                                "title": titleInput.value
+                            }
+                        )
+                    )
+                {{/config.isSetup}}
+                {{^config.isSetup}}
+                    xhr.send(JSON.stringify(fp.selectedDates.map(x => formatDate(x))))
+                {{/config.isSetup}}
+
             },
             false
     );

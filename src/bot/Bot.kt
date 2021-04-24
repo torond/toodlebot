@@ -56,10 +56,10 @@ fun setup(): Bot {
     return bot
 }
 
-fun Bot.sendShareableDoodle(chatId: String, doodleId: String) {
+fun Bot.sendShareableDoodle(chatId: String, doodleId: String, title: String) {
     this.sendMessage(
         chatId,
-        "Doodle created. Use the buttons share the Doodle to a group or close it.",
+        "Doodle \"$title\" created. Use the buttons share the Doodle to a group or close it.",
         markup = InlineKeyboardMarkup(
             KeyboardFactory.inlineMarkup(
                 listOf(
