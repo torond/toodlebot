@@ -16,7 +16,6 @@ import io.ktor.response.*
 import io.ktor.routing.*
 import org.jetbrains.exposed.dao.id.EntityID
 import java.time.LocalDate
-import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import java.util.*
@@ -92,14 +91,20 @@ fun Application.module(testing: Boolean = false) {
 
     fun ApplicationCall.getAndVerifyTelegramLoginData(): LoginData {
         // We know that auth_date, id, username and hash will be supplied by Telegram
+        // If they are missing, something is wrong.
+        val authDate = checkNotNull(this.request.queryParameters["auth_date"])
+        val id = checkNotNull(this.request.queryParameters["id"])
+        val username = checkNotNull(this.request.queryParameters["username"])
+        val hash = checkNotNull(this.request.queryParameters["hash"])
+
         return LoginData(
-            this.request.queryParameters["auth_date"]!!,
+            authDate,
             this.request.queryParameters["first_name"],
-            this.request.queryParameters["id"]!!,
+            id,
             this.request.queryParameters["last_name"],
             this.request.queryParameters["photo_url"],
-            this.request.queryParameters["username"]!!,
-            this.request.queryParameters["hash"]!!
+            username,
+            hash
         )
     }
 
@@ -166,7 +171,8 @@ fun Application.module(testing: Boolean = false) {
                     DoodleConfig.SETUP,
                     defaultDates = proposedDates,
                     doodleId = doodleId,
-                    title = doodleInfo.title)
+                    title = doodleInfo.title
+                )
                 call.respond(MustacheContent(TEMPLATE_NAME, mustacheMapping))
             }
         }
@@ -183,14 +189,17 @@ fun Application.module(testing: Boolean = false) {
                 val doodle = databaseService.createDoodleFromDates(
                     jsonData.dates.map { LocalDate.parse(it, DateUtil.inputFormatter) },
                     jsonData.title,
-                    loginData.username)
+                    loginData.username
+                )
                 // Send reply to user
                 bot.sendShareableDoodle(loginData.id, doodle.id.toString(), jsonData.title)
                 call.respond(HttpStatusCode.OK, doodle.id)
             } else {  // Update data
                 databaseService.assertIsAdmin(doodleId, loginData.username)
                 val jsonData = call.getDatesAndTitle()
-                databaseService.updateDatesOfDoodle(doodleId, jsonData.dates.map { LocalDate.parse(it, DateUtil.inputFormatter) })
+                databaseService.updateDatesOfDoodle(
+                    doodleId,
+                    jsonData.dates.map { LocalDate.parse(it, DateUtil.inputFormatter) })
                 databaseService.updateTitleOfDoodle(doodleId, jsonData.title)
                 call.respond(HttpStatusCode.OK)
             }
