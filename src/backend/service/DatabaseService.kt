@@ -321,6 +321,24 @@ class DatabaseService {
     }
 
     /**
+     * Adds the given [chatId] to the Doodle corresponding to [doodleId].
+     */
+    suspend fun addChatIdToDoodle(doodleId: UUID, chatId: Long) = dbQuery {
+        Chats.insertIgnore {
+            it[this.doodleInfo] = doodleId
+            it[this.chatId] = chatId
+        }
+    }
+
+    /**
+     * Retrieves the chatIds of the Doodle corresponding to [doodleId]
+     */
+    suspend fun getChatIdsOfDoodle(doodleId: UUID): List<Long> = dbQuery {
+        Chats.select { (Chats.doodleInfo eq doodleId) }
+            .map { row -> row[Chats.chatId] }
+    }
+
+    /**
      * Converts the given [row] to a [DoodleInfo].
      */
     private fun toDoodleInfo(row: ResultRow): DoodleInfo =

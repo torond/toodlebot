@@ -25,11 +25,13 @@ object DatabaseFactory {
             drop(InfoJoinDate)
             drop(Participations)
             drop(Participants)
+            drop(Chats)
             create(DoodleInfos)
             create(DoodleDates)
             create(InfoJoinDate)
             create(Participations)
             create(Participants)
+            create(Chats)
         }
         // Insert dummy value for marking a successful answer to a Doodle
         dummyDateId = transaction {
