@@ -3,7 +3,9 @@ package io.doodlebot.backend.service
 import org.apache.commons.codec.binary.Hex
 import org.apache.commons.codec.digest.DigestUtils
 import java.io.FileInputStream
-import java.util.Properties
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.*
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
@@ -60,5 +62,11 @@ object Env {
     }
 }
 
-data class LoginSession(val username: String, val auth_date: String)
+object DateUtil {
+    val inputFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+}
+
+data class JsonData(val dates: List<String>, val title: String) {
+    //val dates: List<LocalDate> = _dates.map { LocalDate.parse(it, DateUtil.inputFormatter) }
+}
 
