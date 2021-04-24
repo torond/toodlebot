@@ -94,6 +94,11 @@
 </div>
 
 <script>
+    // Initially disable confirm button
+    {{#config.hasConfirmButton}}
+    document.getElementById("confirm-button").disabled = true;
+    {{/config.hasConfirmButton}}
+
     {{#config.isSetup}}
         const defaultTitle = `Doodle from ${new Date().toDateString()}`
         document.getElementById("titleInput").placeholder = `${defaultTitle} (Tap to change title)`
@@ -143,6 +148,13 @@
                     dayElem.innerHTML += "<span class='final'></span>"
                 }
             {{/finalDates}}
+        },
+        onChange: function(selectedDates, dateStr, instance) {
+            if (selectedDates.length === 0) {
+                document.getElementById("confirm-button").disabled = true;
+            } else {
+                document.getElementById("confirm-button").disabled = false;
+            }
         },
         {{#defaultDates}}defaultDate: [{{#content}}"{{.}}", {{/content}}],{{/defaultDates}}
         {{#enabledDates}}enable: [{{#content}}"{{.}}", {{/content}}],{{/enabledDates}}
