@@ -161,10 +161,12 @@ fun Application.module(testing: Boolean = false) {
             } else {  // Show previous data, edit Doodle
                 databaseService.assertIsAdmin(doodleId, loginData.username)
                 val proposedDates = databaseService.getProposedDatesByDoodleId(doodleId).map { it.doodleDate }
+                val doodleInfo = databaseService.getDoodleById(doodleId)
                 val mustacheMapping = buildMustacheMapping(
                     DoodleConfig.SETUP,
                     defaultDates = proposedDates,
-                    doodleId = doodleId)
+                    doodleId = doodleId,
+                    title = doodleInfo.title)
                 call.respond(MustacheContent(TEMPLATE_NAME, mustacheMapping))
             }
         }
@@ -189,6 +191,7 @@ fun Application.module(testing: Boolean = false) {
                 databaseService.assertIsAdmin(doodleId, loginData.username)
                 val jsonData = call.getDatesAndTitle()
                 databaseService.updateDatesOfDoodle(doodleId, jsonData.dates.map { LocalDate.parse(it, DateUtil.inputFormatter) })
+                databaseService.updateTitleOfDoodle(doodleId, jsonData.title)
                 call.respond(HttpStatusCode.OK)
             }
         }
