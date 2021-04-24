@@ -94,10 +94,10 @@
 </div>
 
 <script>
-    // Initially disable confirm button
-    {{#config.hasConfirmButton}}
+    // Initially disable confirm button on Setup Doodle
+    {{#config.isSetup}}
     document.getElementById("confirm-button").disabled = true;
-    {{/config.hasConfirmButton}}
+    {{/config.isSetup}}
 
     {{#config.isSetup}}
         const defaultTitle = `Doodle from ${new Date().toDateString()}`
@@ -149,7 +149,7 @@
                 }
             {{/finalDates}}
         },
-        {{#config.hasConfirmButton}}
+        {{#config.isSetup}}
         onChange: function(selectedDates, dateStr, instance) {
             if (selectedDates.length === 0) {
                 document.getElementById("confirm-button").disabled = true;
@@ -157,7 +157,7 @@
                 document.getElementById("confirm-button").disabled = false;
             }
         },
-        {{/config.hasConfirmButton}}
+        {{/config.isSetup}}
         {{#defaultDates}}defaultDate: [{{#content}}"{{.}}", {{/content}}],{{/defaultDates}}
         {{#enabledDates}}enable: [{{#content}}"{{.}}", {{/content}}],{{/enabledDates}}
     });
