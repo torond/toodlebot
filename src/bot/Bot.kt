@@ -49,8 +49,7 @@ fun setup(databaseService: DatabaseService): Bot {
                                 InlineKeyboardButton(
                                     "Answer Doodle / Edit Answer",
                                     login_url = LoginUrl(
-                                        "${Env.host}:${Env.port}/answer/$value",
-                                        request_write_access = true
+                                        "${Env.host}:${Env.port}/answer/$value"
                                     )
                                 )
                             )
@@ -78,15 +77,13 @@ fun Bot.sendShareableDoodle(chatId: String, doodleId: String, title: String) {
                     InlineKeyboardButton(
                         "Edit Doodle",
                         login_url = LoginUrl(
-                            "${Env.host}:${Env.port}/setup/$doodleId",
-                            request_write_access = true
+                            "${Env.host}:${Env.port}/setup/$doodleId"
                         )
                     ),
                     InlineKeyboardButton(
                         "Close Doodle",
                         login_url = LoginUrl(
-                            "${Env.host}:${Env.port}/close/$doodleId",
-                            request_write_access = true
+                            "${Env.host}:${Env.port}/close/$doodleId"
                         )
                     )
                 )
@@ -105,8 +102,7 @@ fun Bot.sendViewButton(chatId: String, doodleId: String) {
                     InlineKeyboardButton(
                         "View Doodle",
                         login_url = LoginUrl(
-                            "${Env.host}:${Env.port}/view/$doodleId",
-                            request_write_access = true
+                            "${Env.host}:${Env.port}/view/$doodleId"
                         )
                     )
                 )
@@ -129,8 +125,7 @@ fun Bot.sendViewButtonToChats(chatIds: List<Long>, doodleId: String) {
                         InlineKeyboardButton(
                             "View Doodle",
                             login_url = LoginUrl(
-                                "${Env.host}:${Env.port}/view/$doodleId",
-                                request_write_access = true
+                                "${Env.host}:${Env.port}/view/$doodleId"
                             )
                         )
                     )
