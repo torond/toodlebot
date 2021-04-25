@@ -29,7 +29,7 @@ const val TEMPLATE_NAME = "frontend.mustache"
 
 @Suppress("unused") // Referenced in application.conf
 @kotlin.jvm.JvmOverloads
-fun Application.module(testing: Boolean = false) {
+fun Application.module(/*testing: Boolean = false*/) {
     DatabaseFactory  // To trigger init block. Is there a better way to do this?
     val databaseService = DatabaseService()
     val inputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
@@ -41,6 +41,11 @@ fun Application.module(testing: Boolean = false) {
     install(Mustache) { mustacheFactory = DefaultMustacheFactory(TEMPLATE_PATH) }
     install(ContentNegotiation) { gson {} }
     install(StatusPages) {
+        statusFile(HttpStatusCode.BadRequest,
+            HttpStatusCode.Unauthorized,
+            HttpStatusCode.NotFound,
+            HttpStatusCode.Forbidden,
+            filePattern = "templates/error#.html")
         exception<BadRequestException> { cause ->
             call.respond(HttpStatusCode.BadRequest) // If request is missing doodleId or dates
             log.warn(cause.message)
@@ -66,7 +71,7 @@ fun Application.module(testing: Boolean = false) {
             log.warn(cause.message)
         }
         exception<AssertionError> { cause ->
-            call.respond(HttpStatusCode.Forbidden)  // If Telegram data could not be verified
+            call.respond(HttpStatusCode.Unauthorized)  // If Telegram data could not be verified
             log.warn(cause.message)
         }
         // UnauthorizedException if /setup/{doodleId} is queried by non-admin
@@ -303,14 +308,13 @@ fun Application.module(testing: Boolean = false) {
 
             val doodleInfo = databaseService.getDoodleById(doodleId)
             val participations = databaseService.getParticipationsByDoodleId(doodleId)
-            val numberOfParticipants = databaseService.getDoodleById(doodleId).numberOfParticipants
             val proposedDates = databaseService.getProposedDatesByDoodleId(doodleId).map { it.doodleDate }
             val finalDates = databaseService.getFinalDatesByDoodleId(doodleId).map { it.doodleDate }
             val mustacheMapping = buildMustacheMapping(
                 DoodleConfig.VIEW,
                 enabledDates = proposedDates,
                 finalDates = finalDates,
-                numberOfParticipants = numberOfParticipants,
+                numberOfParticipants = doodleInfo.numberOfParticipants,
                 participations = participations,
                 doodleId = doodleId,
                 title = doodleInfo.title
