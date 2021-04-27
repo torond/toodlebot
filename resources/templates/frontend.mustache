@@ -1,43 +1,108 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <link rel="stylesheet" href="https://npmcdn.com/flatpickr/dist/themes/airbnb.css">
+    <!-- Declare variables -->
     <style>
         :root {
+            --header-background-color: #1f2b37;
+            --header-text-color: #FFFFFF;
+
+            --tile-color: #1b2530;
+            --seperator-color: #0B0F14;
+            --grey-text-color: #89959f;
+            --disabled-text-color: #4d5359;
+            --accent-color: #74BCEB;
+            --touch-button-color: #2F516D;
+
+
+            --chat-background-color: #141C24;
+
+
+
+            --message-color: #212C38;
+            --text-color: #FAFAFA;
+            --inline-button-color: #242F39;
+            --inline-button-text-color: #FFFFFF;
+
+            --white: #FFFFFF;
+
+
+
             --custom-width-full: 100%;
             --custom-width-day: calc(var(--custom-width-full) / 7);
             place-items: center;
         }
+    </style>
 
+    <!-- Get flatpickr stylesheet -->
+    <link rel="stylesheet" href="/assets/flatpickr.css" type="text/css">
+
+    <!-- Style other elements -->
+    <style>
+        body {
+            /* Disable selecting text */
+            -webkit-touch-callout: none; /* iOS Safari */
+              -webkit-user-select: none; /* Safari */
+               -khtml-user-select: none; /* Konqueror HTML */
+                 -moz-user-select: none; /* Firefox */
+                  -ms-user-select: none; /* Internet Explorer/Edge */
+                      user-select: none; /* Non-prefixed version, currently
+                                            supported by Chrome and Opera */
+            color: var(--text-color);
+            margin: 0;
+            background-color: var(--chat-background-color)
+        }
+
+        /* Other things */
         .custom-btn-holder {
             display: flex;
-            position: fixed;
             left: 0;
             right: 0;
-            bottom: 0;
+            margin: 10px;
+            gap: 10px;
         }
 
         .custom-btn-holder button {
             flex-grow: 1;
+            background-color: var(--message-color);
+            color: var(--text-color);
+            border: 0;
+            border-radius: 5px;
+            margin: auto;
+            height: 40px;
+            font-size: 135%;
+            font-weight: bold;
         }
 
-        .flatpickr-calendar {
-            width: var(--custom-width-full);
+        .custom-btn-holder button:focus {
+            background: var(--touch-button-color);
         }
 
-        .dayContainer {
-            width: var(--custom-width-full);
-            max-width: var(--custom-width-full);
-            min-width: var(--custom-width-full);
+        .pin {
+            color: var(--accent-color);
+            position: absolute;
+            margin-left: -2px;
+            margin-top: 2px;
+            width: 12px;
+            height: 12px;
+            border: solid 1px var(--tile-color);
+            border-radius: 7px 7px 7px 0;
+            background-color: currentColor;
+            -webkit-transform: rotate(-45deg);
+            transform: rotate(-45deg);
         }
 
-        .flatpickr-days {
-            width: var(--custom-width-full);
-        }
-
-        .flatpickr-day {
-            max-width: var(--custom-width-day);
-            max-height: var(--custom-width-day);
+        .pin:before {
+            content: '';
+            position: absolute;
+            left: 3.5px;
+            top: 3.25px;
+            width: 3.5px;
+            height: 3.5px;
+            color: var(--tile-color);
+            border: solid 1px var(--tile-color);
+            border-radius: 3px;
+            background-color: currentColor;
         }
 
         .final {
@@ -55,17 +120,32 @@
             background: indianred;
         }
 
-        .test {
-            position: absolute;
-            right: 5px;
-            bottom: 5px;
+        input, .title {
+            display: flex;
+            margin: 0;
+            border: 0;
+            width: 100%;
+            background-color: var(--header-background-color);
+            color: var(--header-text-color);
+            box-sizing: border-box;
+            padding: 1% 4%;
+            line-height: 200%;
+            font-size: 150%;
+            font-weight: bold;
         }
 
-        input {
-            width: 100%;
-            box-sizing: border-box;
+        input:focus {
+            outline-width: 0;
+        }
+
+        .description {
+            margin: 10px 0 5px;
+            padding: 5px;
+            border: var(--seperator-color);
+            background: var(--tile-color);
         }
     </style>
+
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
 </head>
 <body>
@@ -74,20 +154,20 @@
 <input type="text" id="titleInput">
 {{/config.isSetup}}
 {{^config.isSetup}}
-<div>{{title}}</div>
+<div class="title">{{title}}</div>
 {{/config.isSetup}}
 
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
 <div class="picker" id="pkr"></div>
-<p>{{config.description}}</p>
+<div class="description">{{config.description}}</div>
 
 {{#numberOfParticipants}}
 <p>{{numberOfParticipants}} participants so far.</p>
 {{/numberOfParticipants}}
 
 <div class="custom-btn-holder">
-    <button type="cancel-button" onclick="window.location.href='tg:resolve'">Cancel</button>
+    <button id="cancel-button" type="button" onclick="window.location.href='tg://resolve'">Cancel</button>
     {{#config.hasConfirmButton}}
     <button id="confirm-button" type="button">Confirm</button>
     {{/config.hasConfirmButton}}
@@ -100,8 +180,8 @@
     {{/config.isSetup}}
 
     {{#config.isSetup}}
-        const defaultTitle = `Doodle from ${new Date().toDateString()}`
-        document.getElementById("titleInput").placeholder = `${defaultTitle} (Tap to change title)`
+        const defaultTitle = new Date().toDateString()
+        document.getElementById("titleInput").placeholder = `${defaultTitle} (Tap to change)`
         {{#title}}
             document.getElementById("titleInput").value = "{{title}}"
         {{/title}}
@@ -129,18 +209,29 @@
                 + ('0' + date.getDate()).slice(-2);
     }
 
+    function isToday(someDate) {
+        const today = new Date()
+        return someDate.getDate() === today.getDate() &&
+                someDate.getMonth() === today.getMonth() &&
+                someDate.getFullYear() === today.getFullYear()
+    }
+
     const fp = flatpickr("#pkr", {
         inline: true,
         disableMobile: "true",
         static: true, //necessary?
         mode: "multiple",
+        monthSelectorType: "static",
         onDayCreate: function (dObj, dStr, fp, dayElem) {
             var formattedDate = formatDate(dayElem.dateObj)
+            if (isToday(dayElem.dateObj)) {
+                dayElem.innerHTML += "<span class='pin'></span>"
+            }
             {{#participations}}
-                participantsToday = participations[formattedDate];
+                const participantsToday = participations[formattedDate];
                 if (participantsToday != null) {
                     console.log(participantsToday)
-                    dayElem.innerHTML += "<span class='test'>" + participantsToday.length.toString() + "/{{numberOfParticipants}}</span>";
+                    dayElem.innerHTML += "<span class='test'>(" + participantsToday.length.toString() + "/{{numberOfParticipants}})</span>";
                 }
             {{/participations}}
             {{#finalDates}}
@@ -151,11 +242,7 @@
         },
         {{#config.isSetup}}
         onChange: function(selectedDates, dateStr, instance) {
-            if (selectedDates.length === 0) {
-                document.getElementById("confirm-button").disabled = true;
-            } else {
-                document.getElementById("confirm-button").disabled = false;
-            }
+            document.getElementById("confirm-button").disabled = selectedDates.length === 0;
         },
         {{/config.isSetup}}
         {{#defaultDates}}defaultDate: [{{#content}}"{{.}}", {{/content}}],{{/defaultDates}}
@@ -171,7 +258,10 @@
             alert('Request failed. Returned status of ' + xhr.status);
         } else {
             console.log(xhr.response)
-            window.location.href = 'tg:resolve'
+            window.location = "tg://resolve"///?domain=chssrnm"//{{botUsername}}"
+            // Maybe "https://t.me/{{botUsername}}"
+            //window.close()
+            //window.location.href = "tg://resolve/{{botUsername}}"
         }
     };
     document.getElementById("confirm-button").addEventListener("click",

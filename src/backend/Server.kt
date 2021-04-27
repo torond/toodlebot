@@ -4,7 +4,6 @@ import com.github.mustachejava.DefaultMustacheFactory
 import io.doodlebot.backend.model.NewParticipant
 import io.doodlebot.backend.service.*
 import io.doodlebot.bot.sendShareableDoodle
-import io.doodlebot.bot.sendViewButton
 import io.doodlebot.bot.sendViewButtonToChats
 import io.ktor.application.*
 import io.ktor.features.*
@@ -21,6 +20,7 @@ import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import java.util.*
 import io.doodlebot.bot.setup
+import io.ktor.http.content.*
 import io.ktor.sessions.*
 import kotlin.concurrent.thread
 
@@ -139,6 +139,7 @@ fun Application.module(/*testing: Boolean = false*/) {
     ): Map<String, Any> {
         val mappings: MutableList<Pair<String, Any>> = mutableListOf()
         mappings.add("config" to config)
+        mappings.add("botUsername" to Env.botUsername)
         if (title != null) mappings.add("title" to title)
         if (doodleId != null) mappings.add("doodleId" to doodleId)
         if (enabledDates != null) mappings.add("enabledDates" to mapOf("content" to enabledDates))
@@ -150,6 +151,9 @@ fun Application.module(/*testing: Boolean = false*/) {
     }
 
     routing {
+        static("/assets") {
+            resources("templates")
+        }
         intercept(ApplicationCallPipeline.Call) {
             this.call.getDoodleIdOrNull()?.let {
                 if (!this.call.request.uri.startsWith("/view") && databaseService.doodleIsClosed(it)) {
@@ -168,7 +172,7 @@ fun Application.module(/*testing: Boolean = false*/) {
             call.setLoginSession(loginData)
 
             if (doodleId == null) {  // No previous data, create Doodle
-                call.respond(MustacheContent(TEMPLATE_NAME, mapOf("config" to DoodleConfig.SETUP)))
+                call.respond(MustacheContent(TEMPLATE_NAME, mapOf("config" to DoodleConfig.SETUP, "botUsername" to Env.botUsername)))
             } else {  // Show previous data, edit Doodle
                 databaseService.assertIsAdmin(doodleId, loginData.username)
                 val proposedDates = databaseService.getProposedDatesByDoodleId(doodleId).map { it.doodleDate }
