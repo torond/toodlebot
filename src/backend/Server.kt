@@ -74,6 +74,10 @@ fun Application.module(/*testing: Boolean = false*/) {
             call.respond(HttpStatusCode.Unauthorized)  // If Telegram data could not be verified
             log.warn(cause.message)
         }
+        exception<DateTimeParseException> { cause ->
+            call.respond(HttpStatusCode.BadRequest)  // If received dates are malformed
+            log.warn(cause.message)
+        }
         // UnauthorizedException if /setup/{doodleId} is queried by non-admin
     }
     install(Sessions) { cookie<LoginData>("LOGIN_SESSION", storage = SessionStorageMemory()) }
@@ -196,13 +200,15 @@ fun Application.module(/*testing: Boolean = false*/) {
             if (doodleId == null) {  // Accept new data
                 // TODO: At least one date must be selected
                 val jsonData = call.getDatesAndTitle()
+                val re = Regex("[^A-Za-z0-9 .-]")
+                val title = re.replace(jsonData.title, "")
                 val doodle = databaseService.createDoodleFromDates(
                     jsonData.dates.map { LocalDate.parse(it, DateUtil.inputFormatter) },
-                    jsonData.title,
+                    title,
                     loginData.username
                 )
                 // Send reply to user
-                bot.sendShareableDoodle(loginData.id, doodle.id.toString(), jsonData.title)
+                bot.sendShareableDoodle(loginData.id, doodle.id.toString(), title)
                 call.respond(HttpStatusCode.OK, doodle.id)
             } else {  // Update data
                 databaseService.assertIsAdmin(doodleId, loginData.username)
