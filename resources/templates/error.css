@@ -1,0 +1,11 @@
+body {
+    color: var(--text-color);
+    background-color: var(--chat-background-color)
+}
+
+.error-message {
+    margin: 10px 0 5px;
+    padding: 5px;
+    border: var(--seperator-color);
+    background: var(--tile-color);
+}
