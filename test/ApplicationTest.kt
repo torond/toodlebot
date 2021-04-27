@@ -9,7 +9,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class ApplicationTest {
-    @Test
+    /*@Test
     fun `Setup page should show relevant elements`() {
         withTestApplication({ module(testing = true) }) {
             handleRequest(HttpMethod.Get, "/setup").apply {
@@ -19,7 +19,7 @@ class ApplicationTest {
                 assertTrue(response.content!!.contains("Cancel"))
             }
         }
-    }
+    }*/
 
     @Test
     fun `Return bad request if doodleId has no doodle, transform NotFoundException to 404 Not Found`() {

@@ -29,7 +29,7 @@ const val TEMPLATE_NAME = "frontend.mustache"
 
 @Suppress("unused") // Referenced in application.conf
 @kotlin.jvm.JvmOverloads
-fun Application.module(/*testing: Boolean = false*/) {
+fun Application.module(testing: Boolean = false) {
     DatabaseFactory  // To trigger init block. Is there a better way to do this?
     val databaseService = DatabaseService()
     val inputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
