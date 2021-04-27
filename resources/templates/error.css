@@ -1,6 +1,7 @@
 body {
     color: var(--text-color);
-    background-color: var(--chat-background-color)
+    background-color: var(--chat-background-color);
+    font-family: sans-serif;
 }
 
 .error-message {
