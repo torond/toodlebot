@@ -3,7 +3,6 @@ package io.doodlebot.backend.service
 import org.apache.commons.codec.binary.Hex
 import org.apache.commons.codec.digest.DigestUtils
 import java.io.FileInputStream
-import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.*
 import javax.crypto.Mac
@@ -22,25 +21,33 @@ object HashUtil {
 }
 
 data class LoginData(
-    val auth_date: String,
-    val first_name: String? = null,
+    val authDate: String,
+    val firstName: String? = null,
     val id: String,
-    val last_name: String? = null,
-    val photo_url: String? = null,
+    val lastName: String? = null,
+    val photoUrl: String? = null,
     val username: String,
     val hash: String
 ) {
     init {
+        // Validate input
+        val usernameRegex = "[a-zA-Z0-9_]{5,32}".toRegex()
+        check(usernameRegex.matches(username))
+        val authDateRegex = "[0-9]{10}".toRegex()
+        check(authDateRegex.matches(authDate))
         // Verify Telegram data
         val dataCheckString = listOfNotNull(
-            "auth_date=${auth_date}",
-            if (first_name != null) "first_name=${first_name}" else null,
+            "auth_date=${authDate}",
+            if (firstName != null) "first_name=${firstName}" else null,
             "id=${id}",
-            if (last_name != null) "last_name=${last_name}" else null,
-            if (photo_url != null) "photo_url=${photo_url}" else null,
+            if (lastName != null) "last_name=${lastName}" else null,
+            if (photoUrl != null) "photo_url=${photoUrl}" else null,
             "username=${username}"
         ).joinToString("\n")
-        //assert(hash == HashUtil.createHash(dataCheckString))
+        println(dataCheckString)
+        println(hash)
+        println(HashUtil.createHash(dataCheckString))
+        assert(hash == HashUtil.createHash(dataCheckString))
     }
 }
 
@@ -66,7 +73,5 @@ object DateUtil {
     val inputFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 }
 
-data class JsonData(val dates: List<String>, val title: String) {
-    //val dates: List<LocalDate> = _dates.map { LocalDate.parse(it, DateUtil.inputFormatter) }
-}
+data class JsonData(val dates: List<String>, val title: String)
 
