@@ -47,7 +47,7 @@ fun Application.module(testing: Boolean = false) {
             HttpStatusCode.Forbidden,
             filePattern = "templates/error#.html")
         exception<BadRequestException> { cause ->
-            call.respond(HttpStatusCode.BadRequest) // If request is missing doodleId or dates
+            call.respond(HttpStatusCode.BadRequest) // If request is missing doodleId or dates or session could not be found
             log.warn(cause.message)
         }
         exception<NotFoundException> { cause ->
@@ -120,7 +120,7 @@ fun Application.module(testing: Boolean = false) {
 
     fun ApplicationCall.getLoginSession(): LoginSession {
         // TODO: Better logging
-        val loginSession = this.sessions.get<LoginSession>() ?: throw BadRequestException("No session data provided")
+        val loginSession = this.sessions.get<LoginSession>() ?: throw BadRequestException("Session error.")
         this.application.environment.log.debug("${this.request.httpMethod.value} to ${this.request.path()} by $loginSession")
         return loginSession
     }
