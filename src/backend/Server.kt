@@ -80,7 +80,7 @@ fun Application.module(testing: Boolean = false) {
         }
         // UnauthorizedException if /setup/{doodleId} is queried by non-admin
     }
-    install(Sessions) { cookie<LoginData>("LOGIN_SESSION", storage = SessionStorageMemory()) }
+    install(Sessions) { cookie<LoginSession>("LOGIN_SESSION", storage = SessionStorageMemory()) }
 
     fun ApplicationCall.getDoodleId(): UUID {
         this.parameters["doodleId"] ?: throw BadRequestException("Must provide id")
@@ -118,17 +118,17 @@ fun Application.module(testing: Boolean = false) {
         )
     }
 
-    fun ApplicationCall.getLoginSession(): LoginData {
+    fun ApplicationCall.getLoginSession(): LoginSession {
         // TODO: Better logging
-        val loginData = this.sessions.get<LoginData>() ?: throw BadRequestException("No session data provided")
-        this.application.environment.log.debug("${this.request.httpMethod.value} to ${this.request.path()} by $loginData")
-        return loginData
+        val loginSession = this.sessions.get<LoginSession>() ?: throw BadRequestException("No session data provided")
+        this.application.environment.log.debug("${this.request.httpMethod.value} to ${this.request.path()} by $loginSession")
+        return loginSession
     }
 
-    fun ApplicationCall.setLoginSession(loginData: LoginData) {
+    fun ApplicationCall.setLoginSession(loginSession: LoginSession) {
         // TODO: Better logging
-        this.sessions.set(loginData)
-        this.application.environment.log.debug("${this.request.httpMethod.value} to ${this.request.path()} by $loginData")
+        this.sessions.set(loginSession)
+        this.application.environment.log.debug("${this.request.httpMethod.value} to ${this.request.path()} by $loginSession")
     }
 
     fun buildMustacheMapping(
@@ -173,7 +173,7 @@ fun Application.module(testing: Boolean = false) {
             // -> Only if doodleId is given, otherwise it counts as a new Doodle
             val doodleId = call.getDoodleIdOrNull()
             val loginData = call.getAndVerifyTelegramLoginData()
-            call.setLoginSession(loginData)
+            call.setLoginSession(LoginSession(loginData.username, loginData.chatId))
 
             if (doodleId == null) {  // No previous data, create Doodle
                 call.respond(MustacheContent(TEMPLATE_NAME, mapOf("config" to DoodleConfig.SETUP, "botUsername" to Env.botUsername)))
@@ -195,7 +195,7 @@ fun Application.module(testing: Boolean = false) {
         post("/setup/{doodleId?}") {
             // Get URL parameter
             val doodleId = call.getDoodleIdOrNull()
-            val loginData = call.getLoginSession()
+            val loginSession = call.getLoginSession()
 
             if (doodleId == null) {  // Accept new data
                 // TODO: At least one date must be selected
@@ -205,13 +205,13 @@ fun Application.module(testing: Boolean = false) {
                 val doodle = databaseService.createDoodleFromDates(
                     jsonData.dates.map { LocalDate.parse(it, DateUtil.inputFormatter) },
                     title,
-                    loginData.username
+                    loginSession.username
                 )
                 // Send reply to user
-                bot.sendShareableDoodle(loginData.id, doodle.id.toString(), title)
+                bot.sendShareableDoodle(loginSession.chatId, doodle.id.toString(), title)
                 call.respond(HttpStatusCode.OK, doodle.id)
             } else {  // Update data
-                databaseService.assertIsAdmin(doodleId, loginData.username)
+                databaseService.assertIsAdmin(doodleId, loginSession.username)
                 val jsonData = call.getDatesAndTitle()
                 databaseService.updateDatesOfDoodle(
                     doodleId,
@@ -227,7 +227,7 @@ fun Application.module(testing: Boolean = false) {
         get("/answer/{doodleId?}") {
             val doodleId = call.getDoodleId()
             val loginData = call.getAndVerifyTelegramLoginData()
-            call.setLoginSession(loginData)
+            call.setLoginSession(LoginSession(loginData.username, loginData.chatId))
 
             val newParticipant = NewParticipant(loginData.username)
             databaseService.addParticipantIfNotExisting(newParticipant)
@@ -254,10 +254,10 @@ fun Application.module(testing: Boolean = false) {
             val doodleId = call.getDoodleId()
             val proposedDates = databaseService.getProposedDatesByDoodleId(doodleId).map { it.doodleDate }
             val yesDates = call.getDates().intersect(proposedDates).toList()
-            val loginData = call.getLoginSession()
+            val loginSession = call.getLoginSession()
 
             // Update or add participations
-            val participant = databaseService.getParticipantByUsername(loginData.username)
+            val participant = databaseService.getParticipantByUsername(loginSession.username)
             if (databaseService.hasNotAnswered(doodleId, participant)) {
                 databaseService.addParticipations(doodleId, participant, yesDates)
                 call.respond(HttpStatusCode.OK)
@@ -274,7 +274,7 @@ fun Application.module(testing: Boolean = false) {
             // Needs: pickableDates, Participations
             val doodleId = call.getDoodleId()
             val loginData = call.getAndVerifyTelegramLoginData()
-            call.setLoginSession(loginData)
+            call.setLoginSession(LoginSession(loginData.username, loginData.chatId))
 
             databaseService.assertIsAdmin(doodleId, loginData.username)
             val doodleInfo = databaseService.getDoodleById(doodleId)
@@ -296,9 +296,9 @@ fun Application.module(testing: Boolean = false) {
         // Accept new data, no updates!
         post("/close/{doodleId?}") {
             val doodleId = call.getDoodleId()
-            val loginData = call.getLoginSession()
+            val loginSession = call.getLoginSession()
 
-            databaseService.assertIsAdmin(doodleId, loginData.username)
+            databaseService.assertIsAdmin(doodleId, loginSession.username)
             val finalDates = call.getDates()
             databaseService.markDatesAsFinal(doodleId, finalDates)
             databaseService.markDoodleAsClosed(doodleId)
@@ -314,7 +314,7 @@ fun Application.module(testing: Boolean = false) {
             // TODO: Show own chosen Dates? (auth first and retrieve yesDates if any)
             val doodleId = call.getDoodleId()
             val loginData = call.getAndVerifyTelegramLoginData()
-            call.setLoginSession(loginData)
+            call.setLoginSession(LoginSession(loginData.username, loginData.chatId))
 
             val doodleInfo = databaseService.getDoodleById(doodleId)
             val participations = databaseService.getParticipationsByDoodleId(doodleId)

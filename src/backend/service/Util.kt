@@ -15,41 +15,70 @@ object HashUtil {
         sha256Hmac.init(SecretKeySpec(DigestUtils.sha256(Env.botToken), "HmacSHA256"))
     }
 
-    fun createHash(data: String): String {
+    fun sha256hmac(data: String): String {
         return Hex.encodeHexString(sha256Hmac.doFinal(data.toByteArray()))
+    }
+
+    fun sha256(data: String?): String? {
+        if (data != null) {
+            return Hex.encodeHexString(DigestUtils.sha256(data))
+        }
+        return null
     }
 }
 
-data class LoginData(
-    val authDate: String,
-    val firstName: String? = null,
-    val id: String,
-    val lastName: String? = null,
-    val photoUrl: String? = null,
-    val username: String,
-    val hash: String
+/**
+ * Note: Do not use .copy as it ignores the data validation (https://youtrack.jetbrains.com/issue/KT-11914).
+ */
+data class LoginData private constructor(
+        val authDate: String,
+        val firstName: String? = null,
+        val chatId: String,
+        val lastName: String? = null,
+        val photoUrl: String? = null,
+        var username: String,
+        val hash: String
 ) {
-    init {
-        // Validate input
-        val usernameRegex = "[a-zA-Z0-9_]{5,32}".toRegex()
-        check(usernameRegex.matches(username))
-        val authDateRegex = "[0-9]{10}".toRegex()
-        check(authDateRegex.matches(authDate))
-        // Verify Telegram data
-        val dataCheckString = listOfNotNull(
-            "auth_date=${authDate}",
-            if (firstName != null) "first_name=${firstName}" else null,
-            "id=${id}",
-            if (lastName != null) "last_name=${lastName}" else null,
-            if (photoUrl != null) "photo_url=${photoUrl}" else null,
-            "username=${username}"
-        ).joinToString("\n")
-        println(dataCheckString)
-        println(hash)
-        println(HashUtil.createHash(dataCheckString))
-        assert(hash == HashUtil.createHash(dataCheckString))
+    companion object {
+        operator fun invoke(
+                authDate: String,
+                firstName: String?,
+                chatId: String,
+                lastName: String?,
+                photoUrl: String?,
+                username: String,
+                hash: String
+        ): LoginData {
+            // Validate input
+            val usernameRegex = "[a-zA-Z0-9_]{5,32}".toRegex()
+            check(usernameRegex.matches(username))
+            val authDateRegex = "[0-9]{10}".toRegex()
+            check(authDateRegex.matches(authDate))
+            // Verify Telegram data
+            val dataCheckString = listOfNotNull(
+                    "auth_date=${authDate}",
+                    if (firstName != null) "first_name=${firstName}" else null,
+                    "id=${chatId}",
+                    if (lastName != null) "last_name=${lastName}" else null,
+                    if (photoUrl != null) "photo_url=${photoUrl}" else null,
+                    "username=${username}"
+            ).joinToString("\n")
+            assert(hash == HashUtil.sha256hmac(dataCheckString))
+            return LoginData(authDate,
+                    HashUtil.sha256(firstName),  // Hash private data
+                    chatId,
+                    HashUtil.sha256(lastName),
+                    photoUrl,
+                    HashUtil.sha256(username)!!,  // Username exists as per LoginData constructor
+                    hash)
+        }
     }
 }
+
+/**
+ * Hold the hashed [username] and the [chatId]
+ */
+data class LoginSession(val username: String, val chatId: String)
 
 object Env {
     // Holds data from environment.properties
