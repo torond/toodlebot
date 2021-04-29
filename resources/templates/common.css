@@ -1,0 +1,71 @@
+body {
+    /* Disable selecting text */
+    -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+    -khtml-user-select: none; /* Konqueror HTML */
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* Internet Explorer/Edge */
+    user-select: none; /* Non-prefixed version, currently
+                                            supported by Chrome and Opera */
+    color: var(--text-color);
+    margin: 0;
+    background-color: var(--chat-background-color);
+    font-family: sans-serif;
+}
+
+input, .title {
+    display: flex;
+    margin: 0;
+    border: 0;
+    width: 100%;
+    background-color: var(--header-background-color);
+    color: var(--header-text-color);
+    box-sizing: border-box;
+    padding: 1% 4%;
+    line-height: 200%;
+    font-size: 150%;
+    font-weight: bold;
+}
+
+input:focus {
+    outline-width: 0;
+}
+
+.description {
+    margin: 10px 0 5px;
+    padding: 5px;
+    border: var(--seperator-color);
+    background: var(--tile-color);
+}
+
+.custom-btn-holder {
+    display: flex;
+    left: 0;
+    right: 0;
+    margin: 10px;
+    gap: 10px;
+}
+
+.custom-btn-holder button {
+    flex-grow: 1;
+    background-color: var(--message-color);
+    color: var(--text-color);
+    border: 0;
+    border-radius: 5px;
+    margin: auto;
+    height: 40px;
+    font-size: 135%;
+    font-weight: bold;
+}
+
+.custom-btn-holder button:focus {
+    background: var(--touch-button-color);
+}
+
+.custom-btn-holder button:disabled {
+    color: var(--disabled-text-color);
+}
+
+.note {
+    color
+}

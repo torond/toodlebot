@@ -290,6 +290,8 @@ class DatabaseService {
      * Adds the given [chatId] to the Toodle corresponding to [toodleId].
      */
     suspend fun addChatIdToToodle(toodleId: UUID, chatId: Long) = dbQuery {
+        checkToodleExists(toodleId)
+        checkToodleIsOpen(toodleId)
         Chats.insertIgnore {
             it[this.toodle] = toodleId
             it[this.chatId] = chatId
@@ -300,6 +302,7 @@ class DatabaseService {
      * Retrieves the chatIds of the Toodle corresponding to [toodleId]
      */
     suspend fun getChatIdsOfToodle(toodleId: UUID): List<Long> = dbQuery {
+        checkToodleExists(toodleId)
         Chats.select { (Chats.toodle eq toodleId) }
             .map { row -> row[Chats.chatId] }
     }
@@ -308,6 +311,7 @@ class DatabaseService {
      * Deletes everything related to [toodleId].
      */
     suspend fun deleteToodle(toodleId: UUID) = dbQuery {
+        checkToodleExists(toodleId)
         Toodles.deleteWhere {
             Toodles.id eq toodleId
         }
