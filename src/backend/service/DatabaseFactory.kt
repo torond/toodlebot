@@ -14,28 +14,21 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 object DatabaseFactory {
-    val dummyDateId: EntityID<Int>
     init {
-        println("Initializin database")
-        Database.connect("jdbc:sqlite:./data/data.db", "org.sqlite.JDBC")
+        println("Initializing database")
+        Database.connect("jdbc:sqlite:./data/data.db?foreign_keys=on", "org.sqlite.JDBC")
         TransactionManager.manager.defaultIsolationLevel = Connection.TRANSACTION_SERIALIZABLE
         transaction {
-            drop(DoodleInfos)
-            drop(DoodleDates)
-            drop(InfoJoinDate)
-            drop(Participations)
+            drop(Toodles)
+            drop(Dates)
             drop(Participants)
+            drop(Participations)
             drop(Chats)
-            create(DoodleInfos)
-            create(DoodleDates)
-            create(InfoJoinDate)
-            create(Participations)
+            create(Toodles)
+            create(Dates)
             create(Participants)
+            create(Participations)
             create(Chats)
-        }
-        // Insert dummy value for marking a successful answer to a Doodle
-        dummyDateId = transaction {
-            DoodleDates.insertAndGetId { it[doodleDate] = LocalDate.parse("0001-01-01", DateTimeFormatter.ofPattern("yyyy-MM-dd")) }
         }
     }
 
