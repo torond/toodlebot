@@ -1,7 +1,7 @@
-# DateFinderBot
-Telegram bot for scheduling meetings and events directly in Telegram.  
-Currently only developed to work on smartphones.  
-To use this bot, message [@thedatefinderbot](t.me/thedatefinderbot) to get started!
+# [<img src="/resources/logo-circle.svg" alt="ToodleBot Logo" width="100px" height="100px" >](https://github.com/torond/toodlebot) ToodleBot
+Telegram bot for scheduling meetings and events directly from Telegram.  
+Works best on smartphones.  
+To use this bot, message [@thetoodlebot](t.me/thetoodlebot) to get started!
 
 ## Development Setup
 Follow these steps if you want to set up an instance for yourself.
@@ -9,7 +9,7 @@ Create a file `environment.properties` to the repository root with the following
 ```
 host=<Local ip address of the machine the application is running on e.g. http://123.456.789.000>
 port=<port the app should run on e.g. 8088>
-bot_username=<Name of the Telegram bot (without @) e.g. thedatefinderbot>
+bot_username=<Name of the Telegram bot (without @) e.g. thetoodlebot>
 bot_token=<Token of the Telegram bot>
 ```
 
@@ -46,7 +46,7 @@ A more detailed look at how this app works internally.
 ### Typical data flow sequence diagram
 ![A rendered picture of the diagram described below.](https://mermaid.ink/img/eyJjb2RlIjoic2VxdWVuY2VEaWFncmFtXG5hdXRvbnVtYmVyXG5wYXJ0aWNpcGFudCBDIGFzIERvb2RsZSBDcmVhdG9yPGJyPjxicj4oVGVsZWdyYW0gQ2xpZW50KVxucGFydGljaXBhbnQgQiBhcyBUZWxlZ3JhbSBCb3RcbnBhcnRpY2lwYW50IFcgYXMgRG9vZGxlIFNlcnZlclxucGFydGljaXBhbnQgRyBhcyBUZWxlZ3JhbSBHcm91cFxucGFydGljaXBhbnQgUCBhcyBEb29kbGUgUGFydGljaXBhbnQ8YnI-PGJyPihUZWxlZ3JhbSBDbGllbnQpXG5cbkMgLT4-IEI6IC9zdGFydCBjb21tYW5kIChwcml2YXRlIGNoYXQpXG5CIC0-PiBDOiBTZW5kcyBzdGF0aWMgbGluayBiYWNrZW5kLmNvbS9zZXR1cDxicj5cIkNyZWF0ZSBEb29kbGVcIiBidXR0b25cbkMgLT4-IFc6IENsaWNrcyBcIkNyZWF0ZSBEb29kbGVcIjxicj4oVGVsZWdyYW0gbG9naW4gZGF0YSBpcyBzZW50IGFuZCBzZXNzaW9uIGlzIGNyZWF0ZWQpPGJyPltHRVQgL3NldHVwXVxuVyAtPj4gQzogU2VydmVzIFNldHVwLURvb2RsZSB3ZWJzaXRlXG5DIC0-PiBDOiBQaWNrcyBpbml0aWFsIGRhdGVzXG5DIC0-PiBXOiBDb25maXJtcyAmIHNlbmRzIHBpY2tlZCBkYXRlczxicj5bUE9TVCAvc2V0dXBdXG5XIC0-PiBXOiBQZXJzaXN0cyBEb29kbGUgYW5kIGNyZWF0ZXMgY3J5cHRvIGxpbmtzXG5XIC0-PiBCOiBTZW5kcyBsaW5rcyB0Lm1lLzxib3QtdXNlcm5hbWU-P3N0YXJ0Z3JvdXA9PFVVSUQ-PGJyPiBhbmQgYmFja2VuZC5jb20vY2xvc2UvPFVVSUQ-XG5CIC0-PiBDOiBTZW5kcyBsaW5rczxicj5cIlNoYXJlIERvb2RsZVwiIGFuZCBcIkNsb3NlIERvb2RsZVwiIGJ1dHRvbnNcbmFsdCBTaGFyaW5nXG5DIC0-PiBHOiBDbGlja3MgXCJTaGFyZSBEb29kbGVcIiBhbmQgcGlja3MgZ3JvdXAgY2hhdFxuRyAtPj4gQjogU2VuZHMgL3N0YXJ0IDxVVUlEPiBjb21tYW5kXG5CIC0-PiBHOiBTZW5kcyBsaW5rIGJhY2tlbmQuY29tL2Fuc3dlci88VVVJRD48YnI-J0Fuc3dlciBEb29kbGUnIGJ1dHRvblxuRyAtPj4gUDogRm9yd2FyZHMgYnV0dG9uIHRvIGdyb3VwIG1lbWJlcnNcbmxvb3AgRm9yIGVhY2ggcGFydGljaXBhbnRcblAgLT4-IFc6IENsaWNrcyBcIkFuc3dlciBEb29kbGVcIjxicj4oVGVsZWdyYW0gbG9naW4gZGF0YSBpcyBzZW50IGFuZCBzZXNzaW9uIGlzIGNyZWF0ZWQpPGJyPltHRVQgL2Fuc3dlcl1cblcgLT4-IFA6IFNlcnZlcnMgQW5zd2VyLURvb2RsZVxuUCAtPj4gUDogUGlja3MgZGF0ZXNcblAgLT4-IFc6IENvbmZpcm1zICYgc2VuZHMgcGlja2VkIGRhdGVzPGJyPltQT1NUIC9hbnN3ZXJdXG5XIC0-PiBXOiBQZXJzaXN0cyBhbnN3ZXJcbmVuZFxuZWxzZSBDbG9zaW5nXG5DIC0-PiBXOiBDbGlja3MgXCJDbG9zZSBEb29kbGVcIjxicj5bR0VUIC9jbG9zZS88VVVJRD5dXG5XIC0-PiBDOiBTZXJ2ZXMgQ2xvc2luZy1Eb29kbGVcbkMgLT4-IEM6IFBpY2tzIGZpbmFsIGRhdGVzXG5DIC0-PiBXOiBDb25maXJtcyAmIHNlbmRzIGZpbmFsIGRhdGVzPGJyPltQT1NUIC9jbG9zZS88VVVJRD5dXG5XIC0-PiBXOiBNYXJrcyBEb29kbGUgYXMgY2xvc2VkIGFuZCBzZXRzIGF1dG8tZGVsZXRlIHRpbWVyXG5XIC0-PiBCOiBTZW5kcyBsaW5rIGJhY2tlbmQuY29tL3ZpZXcvPFVVSUQ-XG5CIC0-PiBHOiBTZW5kcyBsaW5rPGJyPlwiVmlldyBEb29kbGVcIiBidXR0b25cbkcgLT4-IFA6IEZvcndhcmRzIGJ1dHRvbiB0byBncm91cCBtZW1iZXJzXG5QIC0-PiBXOiBDbGlja3MgXCJWaWV3IERvb2RsZVwiPGJyPltHRVQgL3ZpZXcvPFVVSUQ-XVxuVyAtPj4gUDogU2VydmVzIFZpZXctRG9vZGxlXG5lbmQiLCJtZXJtYWlkIjp7fSwidXBkYXRlRWRpdG9yIjpmYWxzZX0)
 
-Diagram mermaid:
+Diagram code:
 ```mermaid
 sequenceDiagram
 autonumber
