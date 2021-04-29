@@ -1,10 +1,9 @@
 package io.doodlebot.backend.model
 
 import org.jetbrains.exposed.dao.id.IntIdTable
-import org.jetbrains.exposed.sql.`java-time`.date
-import java.time.LocalDate
+import org.jetbrains.exposed.sql.ReferenceOption
 
 object Chats : IntIdTable() {
     val chatId = long("chatId")
-    val doodleInfo = Chats.reference("doodleInfo", DoodleInfos)
+    val toodle = reference("toodle", Toodles, onDelete = ReferenceOption.CASCADE)
 }

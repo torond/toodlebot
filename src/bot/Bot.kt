@@ -4,13 +4,9 @@ import com.elbekD.bot.Bot
 import com.elbekD.bot.types.InlineKeyboardButton
 import com.elbekD.bot.types.InlineKeyboardMarkup
 import com.elbekD.bot.types.LoginUrl
-import com.elbekD.bot.util.isCommand
-import com.elbekD.bot.util.isMessage
 import com.elbekD.bot.util.keyboard.KeyboardFactory
 import io.doodlebot.backend.service.DatabaseService
 import io.doodlebot.backend.service.Env
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 import java.util.*
 
 fun setup(databaseService: DatabaseService): Bot {
@@ -37,9 +33,9 @@ fun setup(databaseService: DatabaseService): Bot {
         } else {  // Bot was added to a group chat
             // TODO: Check that input is not malicious, anyone can enter "/start somethingbad"
             val doodleId = UUID.fromString(value)
-            val chatIds = databaseService.getChatIdsOfDoodle(doodleId)
+            val chatIds = databaseService.getChatIdsOfToodle(doodleId)
             if(!chatIds.contains(msg.chat.id)) {
-                databaseService.addChatIdToDoodle(doodleId, msg.chat.id)
+                databaseService.addChatIdToToodle(doodleId, msg.chat.id)
                 bot.sendMessage(
                     msg.chat.id,  // ID of the chosen group chat
                     "Answer the Doodle with the button below. You can also edit your answer.",
