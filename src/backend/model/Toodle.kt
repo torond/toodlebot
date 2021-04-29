@@ -7,7 +7,7 @@ object Toodles : UUIDTable() {
     val title = varchar("title", 255)
     val isClosed = bool("isClosed")
     val numberOfParticipants = integer("numberOfParticipants")
-    val adminUsername = varchar("adminUsername", 255)
+    val adminUserId = varchar("adminUserId", 255)
 }
 
 data class Toodle(
@@ -15,5 +15,5 @@ data class Toodle(
         val id: UUID,
         val isClosed: Boolean = false,
         val numberOfParticipants: Int = 0,
-        val adminUsername: String
+        val adminUserId: String
 )

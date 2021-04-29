@@ -16,6 +16,7 @@ fun setup(databaseService: DatabaseService): Bot {
 
     bot.onCommand("/start") { msg, value ->
         if (value == null) {  // Someone creates a Doodle
+            println(msg.chat.id)
             bot.sendMessage(
                 msg.chat.id,
                 "Click the button below to create a new Doodle!",
@@ -34,6 +35,7 @@ fun setup(databaseService: DatabaseService): Bot {
             // TODO: Check that input is not malicious, anyone can enter "/start somethingbad"
             val doodleId = UUID.fromString(value)
             val chatIds = databaseService.getChatIdsOfToodle(doodleId)
+            println(msg.chat.id)
             if(!chatIds.contains(msg.chat.id)) {
                 databaseService.addChatIdToToodle(doodleId, msg.chat.id)
                 bot.sendMessage(
