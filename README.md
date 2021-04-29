@@ -1,7 +1,7 @@
 # [<img src="/resources/logo-circle.svg" alt="ToodleBot Logo" width="100px" height="100px" >](https://github.com/torond/toodlebot) ToodleBot
 Telegram bot for scheduling meetings and events directly from Telegram.  
 Works best on smartphones.  
-To use this bot, message [@thetoodlebot](t.me/thetoodlebot) to get started!
+To use this bot, message [@thetoodlebot](https://t.me/thetoodlebot) to get started!
 
 ## Development Setup
 Follow these steps if you want to set up an instance for yourself.
