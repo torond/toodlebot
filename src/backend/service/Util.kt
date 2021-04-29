@@ -33,32 +33,32 @@ object HashUtil {
 data class LoginData private constructor(
         val authDate: String,
         val firstName: String? = null,
-        val chatId: String,
+        val userId: String,
         val lastName: String? = null,
         val photoUrl: String? = null,
-        var username: String,
+        var username: String? = null,
         val hash: String
 ) {
     companion object {
         operator fun invoke(
                 authDate: String,
                 firstName: String?,
-                chatId: String,
+                userId: String,
                 lastName: String?,
                 photoUrl: String?,
-                username: String,
+                username: String?,
                 hash: String
         ): LoginData {
             // Validate input
-            val usernameRegex = "[a-zA-Z0-9_]{5,32}".toRegex()
-            check(usernameRegex.matches(username))
+            /*val usernameRegex = "[a-zA-Z0-9_]{5,32}".toRegex()
+            check(usernameRegex.matches(username))*/
             val authDateRegex = "[0-9]{10}".toRegex()
             check(authDateRegex.matches(authDate))
             // Verify Telegram data
             val dataCheckString = listOfNotNull(
                     "auth_date=${authDate}",
                     if (firstName != null) "first_name=${firstName}" else null,
-                    "id=${chatId}",
+                    "id=${userId}",
                     if (lastName != null) "last_name=${lastName}" else null,
                     if (photoUrl != null) "photo_url=${photoUrl}" else null,
                     "username=${username}"
@@ -66,19 +66,19 @@ data class LoginData private constructor(
             assert(hash == HashUtil.sha256hmac(dataCheckString))
             return LoginData(authDate,
                     HashUtil.sha256(firstName),  // Hash private data
-                    chatId,
+                    userId,
                     HashUtil.sha256(lastName),
                     photoUrl,
-                    HashUtil.sha256(username)!!,  // Username exists as per LoginData constructor
+                    HashUtil.sha256(username),
                     hash)
         }
     }
 }
 
 /**
- * Hold the hashed [username] and the [chatId]
+ * Holds the [userId]
  */
-data class LoginSession(val username: String, val chatId: String)
+data class LoginSession(val userId: String)
 
 object Env {
     // Holds data from environment.properties

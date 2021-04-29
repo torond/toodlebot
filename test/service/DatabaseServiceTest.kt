@@ -1,6 +1,5 @@
 package io.doodlebot.service
 
-import io.doodlebot.backend.model.NewParticipant
 import io.doodlebot.backend.model.Participants
 import io.doodlebot.backend.service.DatabaseService
 import kotlinx.coroutines.runBlocking

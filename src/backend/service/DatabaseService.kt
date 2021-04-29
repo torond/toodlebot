@@ -14,13 +14,13 @@ class DatabaseService {
      * Inserts a new [Toodle] object and links the corresponding [dates].
      * Returns the created [Toodle] object for accessing its id.
      */
-    suspend fun createToodleFromDates(dates: List<LocalDate>, title: String, adminUsername: String): Toodle {
+    suspend fun createToodleFromDates(dates: List<LocalDate>, title: String, adminUserId: String): Toodle {
         val toodleId = dbQuery {
             Toodles.insertAndGetId {
                 it[this.title] = title
                 it[this.isClosed] = Op.FALSE
                 it[this.numberOfParticipants] = 0
-                it[this.adminUsername] = adminUsername
+                it[this.adminUserId] = adminUserId
             }
         }
 
@@ -96,10 +96,10 @@ class DatabaseService {
     }
 
     /**
-     * Adds a participant with the given [username] to the Toodle corresponding to [toodleId].
+     * Adds a participant with the given [userId] to the Toodle corresponding to [toodleId].
      * Adding a participant means that they will count towards numberOfParticipants.
      */
-    suspend fun addParticipantToToodle(toodleId: UUID, username: String) = dbQuery {
+    suspend fun addParticipantToToodle(toodleId: UUID, userId: String) = dbQuery {
         dbQuery {  // Not really needed as it's just the count of participants with toodleId
             Toodles.update({ Toodles.id eq toodleId }) {
                 with(SqlExpressionBuilder) {
@@ -108,7 +108,7 @@ class DatabaseService {
             }
         }
         Participants.insertAndGetId {
-            it[this.name] = username
+            it[this.userId] = userId
             it[this.toodle] = toodleId
         }
     }
@@ -129,12 +129,12 @@ class DatabaseService {
     }
 
     /**
-     * Returns true iff the participant with [username] has not yet participated in the Toodle corresponding to
+     * Returns true iff the participant with [userId] has not yet participated in the Toodle corresponding to
      * [toodleId], i.e. if [addParticipantToToodle] was not executed.
      */
-    suspend fun notYetParticipating(toodleId: UUID, username: String): Boolean = dbQuery {
+    suspend fun notYetParticipating(toodleId: UUID, userId: String): Boolean = dbQuery {
         Participants.select {
-            (Participants.toodle eq toodleId) and (Participants.name eq username)
+            (Participants.toodle eq toodleId) and (Participants.userId eq userId)
         }.empty()
     }
 
@@ -196,24 +196,24 @@ class DatabaseService {
     }
 
     /**
-     * Retrieves a participant's ID given its [username] and the [toodleId] of the Toodle the participant is in.
+     * Retrieves a participant's ID given its [userId] and the [toodleId] of the Toodle the participant is in.
      * Returns null if participant cannot be found.
      */
-    suspend fun getParticipantId(toodleId: UUID, username: String): EntityID<Int>? = dbQuery {
+    suspend fun getParticipantId(toodleId: UUID, userId: String): EntityID<Int>? = dbQuery {
         Participants.select {
-            (Participants.name eq username) and (Participants.toodle eq toodleId)
+            (Participants.userId eq userId) and (Participants.toodle eq toodleId)
         }.mapNotNull { row -> row[Participants.id] }.singleOrNull()
 
     }
 
     /**
-     * Retrieves the (already) selected yesDates of a participant with [username] in a Toodle corresponding to [toodleId].
+     * Retrieves the (already) selected yesDates of a participant with [userId] in a Toodle corresponding to [toodleId].
      * Returns an empty list if the participant does not exist or has not picked any dates.
      */
-    suspend fun getYesDatesByToodleIdAndParticipantUsername(toodleId: UUID, username: String): List<LocalDate> {
+    suspend fun getYesDatesByToodleIdAndParticipantUserId(toodleId: UUID, userId: String): List<LocalDate> {
         val participations = getParticipationMap(toodleId)
         println(participations)
-        val participantId = getParticipantId(toodleId, username) ?: return emptyList()
+        val participantId = getParticipantId(toodleId, userId) ?: return emptyList()
         println(participantId)
         return participations.filterValues { participantIds -> participantId in participantIds }
             .map { k -> k.key }
@@ -274,12 +274,12 @@ class DatabaseService {
     }
 
     /**
-     * Returns true iff [adminUsername] is the admin of the Toodle corresponding to [toodleId].
+     * Returns true iff [adminUserId] is the admin of the Toodle corresponding to [toodleId].
      */
-    suspend fun assertIsAdmin(toodleId: UUID, adminUsername: String) {
+    suspend fun assertIsAdmin(toodleId: UUID, adminUserId: String) {
         if (dbQuery {
                 checkToodleExists(toodleId)
-                Toodles.select { Toodles.id eq toodleId }.map { it[Toodles.adminUsername] != adminUsername }
+                Toodles.select { Toodles.id eq toodleId }.map { it[Toodles.adminUserId] != adminUserId }
                     .single()
             }) {
             throw BadRequestException("Not an admin, access denied.")
@@ -326,7 +326,7 @@ class DatabaseService {
                     title = row[Toodles.title],
                     isClosed = row[Toodles.isClosed],
                     numberOfParticipants = row[Toodles.numberOfParticipants],
-                    adminUsername = row[Toodles.adminUsername]
+                    adminUserId = row[Toodles.adminUserId]
             )
 
     /**
