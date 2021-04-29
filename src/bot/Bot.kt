@@ -81,6 +81,12 @@ fun Bot.sendShareableDoodle(chatId: String, doodleId: String, title: String) {
                         login_url = LoginUrl(
                             "${Env.host}:${Env.port}/close/$doodleId"
                         )
+                    ),
+                    InlineKeyboardButton(
+                            "Delete Doodle",
+                            login_url = LoginUrl(
+                                    "${Env.host}:${Env.port}/delete/$doodleId"
+                            )
                     )
                 )
             )

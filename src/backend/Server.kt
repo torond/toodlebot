@@ -21,6 +21,7 @@ import java.util.*
 import io.doodlebot.bot.setup
 import io.ktor.http.content.*
 import io.ktor.sessions.*
+import java.io.File
 import kotlin.concurrent.thread
 
 const val TEMPLATE_PATH = "templates"
@@ -47,35 +48,35 @@ fun Application.module(testing: Boolean = false) {
             filePattern = "templates/error#.html")
         exception<BadRequestException> { cause ->
             call.respond(HttpStatusCode.BadRequest) // If request is missing doodleId or dates or session could not be found
-            log.warn(cause.stackTraceToString())
+            log.warn(cause.message)
         }
         exception<NotFoundException> { cause ->
             call.respond(HttpStatusCode.NotFound)  // If Doodle or dates are not found
-            log.warn(cause.stackTraceToString())
+            log.warn(cause.message)
         }
         exception<DateTimeParseException> { cause ->
             call.respond(HttpStatusCode.BadRequest)
-            log.warn(cause.stackTraceToString())
+            log.warn(cause.message)
         }
         exception<ContentTransformationException> { cause ->
             call.respond(HttpStatusCode.BadRequest)  // If content cannot be negotiated
-            log.warn(cause.stackTraceToString())
+            log.warn(cause.message)
         }
         exception<IllegalArgumentException> { cause ->
             call.respond(HttpStatusCode.BadRequest)  // If content cannot be negotiated
-            log.warn(cause.stackTraceToString())
+            log.warn(cause.message)
         }
         exception<IllegalStateException> { cause ->
             call.respond(HttpStatusCode.Forbidden)
-            log.warn(cause.stackTraceToString())
+            log.warn(cause.message)
         }
         exception<AssertionError> { cause ->
             call.respond(HttpStatusCode.Unauthorized)  // If Telegram data could not be verified
-            log.warn(cause.stackTraceToString())
+            log.warn(cause.message)
         }
         exception<DateTimeParseException> { cause ->
             call.respond(HttpStatusCode.BadRequest)  // If received dates are malformed
-            log.warn(cause.stackTraceToString())
+            log.warn(cause.message)
         }
         // UnauthorizedException if /setup/{doodleId} is queried by non-admin
     }
@@ -331,15 +332,14 @@ fun Application.module(testing: Boolean = false) {
         }
 
         /** Endpoint for closing a Doodle */
-        delete("/delete/{doodleId?}") {
-            // Needs: pickableDates, Participations
+        get("/delete/{doodleId?}") {
+            // TODO: Should not use GET
             val doodleId = call.getDoodleId()
-            //val loginData = call.getAndVerifyTelegramLoginData()
-            //call.setLoginSession(LoginSession(loginData.username, loginData.chatId))
+            val loginData = call.getAndVerifyTelegramLoginData()
 
-            //databaseService.assertIsAdmin(doodleId, "chssrnm")
+            databaseService.assertIsAdmin(doodleId, loginData.username)
             databaseService.deleteToodle(doodleId)
-            call.respond(HttpStatusCode.OK, "Deleted $doodleId")
+            call.respond(MustacheContent("deleted.mustache", null))
         }
 
 

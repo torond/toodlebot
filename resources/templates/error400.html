@@ -3,13 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <title>Error 400</title>
+
     <!-- Get variables -->
     <link rel="stylesheet" href="/assets/root.css" type="text/css">
-    <!-- Get stylesheet -->
-    <link rel="stylesheet" href="/assets/error.css" type="text/css">
+
+    <!-- Get common stylesheet -->
+    <link rel="stylesheet" href="/assets/common.css" type="text/css">
+
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
 </head>
 <body>
-<div class="error-message">Something went wrong. 400 Bad Request.</div>
+<div class="description">
+    I can't quite make out what you want me to do, sorry!<br>
+    <span style="color: var(--disabled-text-color)">(400 Bad Request)</span>
+</div>
+<div class="custom-btn-holder">
+    <button id="cancel-button" type="button" onclick="window.location.href='tg://resolve'">Cancel</button>
+</div>
 </body>
 </html>
