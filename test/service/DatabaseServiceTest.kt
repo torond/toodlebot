@@ -1,11 +1,6 @@
-package io.doodlebot.service
+package io.toodlebot.service
 
-import io.doodlebot.backend.model.Participants
-import io.doodlebot.backend.service.DatabaseService
-import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.dao.id.EntityID
-import java.time.LocalDate
-import kotlin.test.*
+import io.toodlebot.backend.service.DatabaseService
 
 class DatabaseServiceTest {
     private val databaseService = DatabaseService()

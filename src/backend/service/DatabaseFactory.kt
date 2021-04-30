@@ -1,17 +1,13 @@
-package io.doodlebot.backend.service
+package io.toodlebot.backend.service
 
-import io.doodlebot.backend.model.*
-import org.jetbrains.exposed.dao.id.EntityID
+import io.toodlebot.backend.model.*
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.SchemaUtils.create
 import org.jetbrains.exposed.sql.SchemaUtils.drop
-import org.jetbrains.exposed.sql.insertAndGetId
 import java.sql.Connection
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 
 object DatabaseFactory {
     init {

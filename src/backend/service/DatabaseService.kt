@@ -1,7 +1,7 @@
-package io.doodlebot.backend.service
+package io.toodlebot.backend.service
 
-import io.doodlebot.backend.model.*
-import io.doodlebot.backend.service.DatabaseFactory.dbQuery
+import io.toodlebot.backend.model.*
+import io.toodlebot.backend.service.DatabaseFactory.dbQuery
 import io.ktor.features.*
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.*

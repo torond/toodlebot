@@ -11,11 +11,11 @@ plugins {
     kotlin("jvm") version "1.4.20"
 }
 
-group = "io.doodlebot"
+group = "io.toodlebot"
 version = "0.0.1"
 
 application {
-    mainClassName = "io.doodlebot.ApplicationKt"
+    mainClassName = "io.toodlebot.ApplicationKt"
 }
 
 repositories {

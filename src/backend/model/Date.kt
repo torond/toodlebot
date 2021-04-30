@@ -1,4 +1,4 @@
-package io.doodlebot.backend.model
+package io.toodlebot.backend.model
 
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
