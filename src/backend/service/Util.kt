@@ -61,7 +61,7 @@ data class LoginData private constructor(
                     "id=${userId}",
                     if (lastName != null) "last_name=${lastName}" else null,
                     if (photoUrl != null) "photo_url=${photoUrl}" else null,
-                    "username=${username}"
+                    if (username != null) "username=${username}" else null
             ).joinToString("\n")
             assert(hash == HashUtil.sha256hmac(dataCheckString))
             return LoginData(authDate,
