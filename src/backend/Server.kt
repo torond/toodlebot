@@ -30,7 +30,7 @@ import org.jetbrains.exposed.dao.id.EntityID
 const val TEMPLATE_PATH = "templates"
 const val TEMPLATE_NAME = "frontend.mustache"
 
-@Suppress("unused") // Referenced in application.conf
+@Suppress("unused")  // Referenced in application.conf
 @kotlin.jvm.JvmOverloads
 fun Application.module(testing: Boolean = false) {
     DatabaseFactory  // To trigger init block. Is there a better way to do this?
@@ -96,26 +96,44 @@ fun Application.module(testing: Boolean = false) {
 
     install(Sessions) { cookie<LoginSession>("LOGIN_SESSION", storage = SessionStorageMemory()) }
 
+    /**
+     * Retrieve the Toodle ID from the route parameters.
+     * Throws [BadRequestException] if ID cannot be found.
+     */
     fun ApplicationCall.getToodleId(): UUID {
         this.parameters["toodleId"] ?: throw BadRequestException("Must provide id")
         return UUID.fromString(this.parameters["toodleId"])
     }
 
+    /**
+     * Retrieve the Toodle ID from the route parameters.
+     * Returns null if ID cannot be found.
+     */
     fun ApplicationCall.getToodleIdOrNull(): UUID? {
         return this.parameters["toodleId"]?.let { UUID.fromString(it) }
     }
 
+    /**
+     * Retrieve list of dates from request body.
+     * Throws [BadRequestException] if data cannot be found.
+     */
     suspend fun ApplicationCall.getDates(): List<LocalDate> {
         val raw = this.receiveOrNull<List<String>>() ?: throw BadRequestException("Must provide dates")
         return raw.map { LocalDate.parse(it, inputFormatter) }
     }
 
+    /**
+     * Retrieve list of dates and title from request body.
+     * Throws [BadRequestException] if data cannot be found.
+     */
     suspend fun ApplicationCall.getDatesAndTitle(): JsonData =
         this.receiveOrNull() ?: throw BadRequestException("Must provide dates")
 
+    /**
+     * Retrieve and verify login data supplied by Telegram.
+     * auth_date, id, and hash are not-null.
+     */
     fun ApplicationCall.getAndVerifyTelegramLoginData(): LoginData {
-        // We know that auth_date, id, and hash will be supplied by Telegram
-        // If they are missing, something is wrong.
         val authDate = checkNotNull(this.request.queryParameters["auth_date"])
         val id = checkNotNull(this.request.queryParameters["id"])
         val hash = checkNotNull(this.request.queryParameters["hash"])
@@ -131,6 +149,9 @@ fun Application.module(testing: Boolean = false) {
         )
     }
 
+    /**
+     * Look up the client session.
+     */
     fun ApplicationCall.getLoginSession(): LoginSession {
         // TODO: Better logging
         val loginSession = this.sessions.get<LoginSession>() ?: throw BadRequestException("Session error.")
@@ -138,12 +159,18 @@ fun Application.module(testing: Boolean = false) {
         return loginSession
     }
 
+    /**
+     * Set a new client session.
+     */
     fun ApplicationCall.setLoginSession(loginSession: LoginSession) {
         // TODO: Better logging
         this.sessions.set(loginSession)
         this.application.environment.log.debug("${this.request.httpMethod.value} to ${this.request.path()} by $loginSession")
     }
 
+    /**
+     * Helper function for building the mapping used in frontend.mustache.
+     */
     fun buildMustacheMapping(
             config: ToodleConfig,
             title: String? = null,
@@ -171,6 +198,8 @@ fun Application.module(testing: Boolean = false) {
         static("/assets") {
             resources("templates")
         }
+
+        /** Redirect to /view if a Toodle is closed. */
         intercept(ApplicationCallPipeline.Call) {
             this.call.getToodleIdOrNull()?.let {
                 if (!this.call.request.uri.startsWith("/view") && databaseService.toodleIsClosed(it)) {
@@ -182,8 +211,6 @@ fun Application.module(testing: Boolean = false) {
 
         /** Endpoint for setting up and editing the initial dates of a Toodle */
         get("/setup/{toodleId?}") {
-            // TODO: Check for existing session and if user is authorized to access this (is admin)
-            // -> Only if toodleId is given, otherwise it counts as a new Toodle
             val toodleId = call.getToodleIdOrNull()
             val loginData = call.getAndVerifyTelegramLoginData()
             call.setLoginSession(LoginSession(loginData.userId))
@@ -206,7 +233,6 @@ fun Application.module(testing: Boolean = false) {
 
         /** Accepts setup dates for the Toodle */
         post("/setup/{toodleId?}") {
-            // Get URL parameter
             val toodleId = call.getToodleIdOrNull()
             val loginSession = call.getLoginSession()
 
@@ -236,8 +262,6 @@ fun Application.module(testing: Boolean = false) {
         }
 
         /** Endpoint for answering and editing the answers of a Toodle */
-        // Clean slate & show previous state
-        // UUID is mandatory
         get("/answer/{toodleId?}") {
             val toodleId = call.getToodleId()
             val loginData = call.getAndVerifyTelegramLoginData()
@@ -248,7 +272,7 @@ fun Application.module(testing: Boolean = false) {
             val yesDates = databaseService.getYesDatesByToodleIdAndParticipantUserId(
                 toodleId,
                 loginData.userId
-            )  // If there are dates associated to this userId and toodleId, returns them. Else empty list.
+            )
             val mustacheMapping = buildMustacheMapping(
                 ToodleConfig.ANSWER,
                 enabledDates = proposedDates,
@@ -260,28 +284,23 @@ fun Application.module(testing: Boolean = false) {
         }
 
         /** Accepts answer and their edits of a Toodle */
-        // Accept new data & update data
         post("/answer/{toodleId?}") {
             val toodleId = call.getToodleId()
             val proposedDates = databaseService.getProposedDatesByToodleId(toodleId)
             val yesDates = call.getDates().intersect(proposedDates).toList()
             val loginSession = call.getLoginSession()
 
-            // Update or add participations
-            if (databaseService.notYetParticipating(toodleId, loginSession.userId)) {
-                val participantId = databaseService.addParticipantToToodle(toodleId, loginSession.userId)
-                // replace following with updateParticipations
-                databaseService.updateParticipations(toodleId, participantId, yesDates)
-                databaseService.refreshExpirationDate(toodleId)
-                call.respond(HttpStatusCode.OK)
+
+            val participantId = if (databaseService.notYetParticipating(toodleId, loginSession.userId)) {
+                databaseService.addParticipantToToodle(toodleId, loginSession.userId)
             } else {
-                val participantId = databaseService.getParticipantId(toodleId, loginSession.userId) ?: throw NotFoundException("Participant with userId ${loginSession.userId} not found")
-                databaseService.updateParticipations(toodleId, participantId, yesDates)
-                databaseService.refreshExpirationDate(toodleId)
-                call.respond(HttpStatusCode.OK)
+                databaseService.getParticipantId(toodleId, loginSession.userId) ?: throw NotFoundException("Participant with userId ${loginSession.userId} not found")
             }
 
-
+            // Update participations
+            databaseService.updateParticipations(toodleId, participantId, yesDates)
+            databaseService.refreshExpirationDate(toodleId)
+            call.respond(HttpStatusCode.OK)
         }
 
         /** Endpoint for closing a Toodle */
@@ -294,11 +313,10 @@ fun Application.module(testing: Boolean = false) {
             val toodle = databaseService.getToodleById(toodleId)
             val proposedDates = databaseService.getProposedDatesByToodleId(toodleId)
             val participations = databaseService.getParticipationMap(toodleId)
-            val numberOfParticipants = databaseService.getToodleById(toodleId).numberOfParticipants
             val mustacheMapping = buildMustacheMapping(
                 ToodleConfig.CLOSE,
                 enabledDates = proposedDates,
-                numberOfParticipants = numberOfParticipants,
+                numberOfParticipants = toodle.numberOfParticipants,
                 participations = participations,
                 toodleId = toodleId,
                 title = toodle.title
@@ -307,29 +325,26 @@ fun Application.module(testing: Boolean = false) {
         }
 
         /** Accepts final dates of a Toodle*/
-        // Accept new data, no updates!
         post("/close/{toodleId?}") {
             val toodleId = call.getToodleId()
             val loginSession = call.getLoginSession()
 
             databaseService.assertIsAdmin(toodleId, loginSession.userId)
+
             val finalDates = call.getDates()
             databaseService.markDatesAsFinal(toodleId, finalDates)
             databaseService.markToodleAsClosed(toodleId)
-            val sharedGroupIds = databaseService.getChatIdsOfToodle(toodleId)
-
-            bot.sendViewButtonToChats(sharedGroupIds, toodleId.toString())
             databaseService.refreshExpirationDate(toodleId)
+
+            val sharedGroupIds = databaseService.getChatIdsOfToodle(toodleId)
+            bot.sendViewButtonToChats(sharedGroupIds, toodleId.toString())
             call.respond(HttpStatusCode.OK)
         }
 
         /** Endpoint for viewing the results of a Toodle*/
-        // Present (all) data
         get("/view/{toodleId?}") {
-            // TODO: Show own chosen Dates? (auth first and retrieve yesDates if any)
             val toodleId = call.getToodleId()
             val loginData = call.getAndVerifyTelegramLoginData()
-            call.setLoginSession(LoginSession(loginData.userId))
 
             val toodle = databaseService.getToodleById(toodleId)
             val participations = databaseService.getParticipationMap(toodleId)

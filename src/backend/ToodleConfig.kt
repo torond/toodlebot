@@ -1,5 +1,8 @@
 package io.toodlebot.backend
 
+/**
+ * Holds basic information about the state of a Toodle.
+ */
 enum class ToodleConfig(
         val description: String,
         val hasConfirmButton: Boolean,

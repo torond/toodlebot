@@ -8,6 +8,9 @@ import java.util.*
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
+/**
+ * Utility object for hashing related logic.
+ */
 object HashUtil {
     private val sha256Hmac = Mac.getInstance("HmacSHA256")
 
@@ -28,6 +31,7 @@ object HashUtil {
 }
 
 /**
+ * Holds and verifies the login URL data supplied by Telegram.
  * Note: Do not use .copy as it ignores the data validation (https://youtrack.jetbrains.com/issue/KT-11914).
  */
 data class LoginData private constructor(
@@ -50,8 +54,10 @@ data class LoginData private constructor(
                 hash: String
         ): LoginData {
             // Validate input
-            /*val usernameRegex = "[a-zA-Z0-9_]{5,32}".toRegex()
-            check(usernameRegex.matches(username))*/
+            if (username != null) {
+                val usernameRegex = "[a-zA-Z0-9_]{5,32}".toRegex()
+                check(usernameRegex.matches(username))
+            }
             val authDateRegex = "[0-9]{10}".toRegex()
             check(authDateRegex.matches(authDate))
             // Verify Telegram data
@@ -76,12 +82,15 @@ data class LoginData private constructor(
 }
 
 /**
- * Holds the [userId]
+ * Holds the [userId].
+ * Used by the Ktor Session plugin.
  */
 data class LoginSession(val userId: String)
 
+/**
+ * Holds data from environment.properties.
+ */
 object Env {
-    // Holds data from environment.properties
     private val props = Properties()
     private val inputStream = FileInputStream("environment.properties")
     val host: String
@@ -98,9 +107,15 @@ object Env {
     }
 }
 
+/**
+ * Utility object for date related logic.
+ */
 object DateUtil {
     val inputFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 }
 
+/**
+ * Helper object to hold the dates and title of a Toodle on POST /setup.
+ */
 data class JsonData(val dates: List<String>, val title: String)
 
