@@ -17,7 +17,6 @@ fun setup(databaseService: DatabaseService): Bot {
 
     bot.onCommand("/start") { msg, value ->
         if (value == null) {  // Someone creates a Toodle
-            println(msg.chat.id)
             bot.sendMessage(
                 msg.chat.id,
                 "Click the button below to create a new Toodle!",

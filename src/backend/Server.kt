@@ -48,7 +48,7 @@ fun Application.module(testing: Boolean = false) {
         while (true) {
             delay(Duration.ofDays(1))
             databaseService.deleteExpiredToodles()
-            println("Delete expired")
+            log.info("Deleting expired Toodles")
         }
     }
 
@@ -202,7 +202,9 @@ fun Application.module(testing: Boolean = false) {
         /** Redirect to /view if a Toodle is closed. */
         intercept(ApplicationCallPipeline.Call) {
             this.call.getToodleIdOrNull()?.let {
-                if (!this.call.request.uri.startsWith("/view") && databaseService.toodleIsClosed(it)) {
+                if (!this.call.request.uri.startsWith("/view")
+                        && !this.call.request.uri.startsWith("/delete")
+                        && databaseService.toodleIsClosed(it)) {
                     this.call.respondRedirect("/view/$it?${this.call.request.queryString()}")
                     this.finish()
                 }

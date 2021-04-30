@@ -213,9 +213,7 @@ class DatabaseService {
      */
     suspend fun getYesDatesByToodleIdAndParticipantUserId(toodleId: UUID, userId: String): List<LocalDate> {
         val participations = getParticipationMap(toodleId)
-        println(participations)
         val participantId = getParticipantId(toodleId, userId) ?: return emptyList()
-        println(participantId)
         return participations.filterValues { participantIds -> participantId in participantIds }
             .map { k -> k.key }
             .toList()
