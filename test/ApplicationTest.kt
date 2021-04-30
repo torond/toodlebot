@@ -1,12 +1,11 @@
-package io.doodlebot
+package io.toodlebot
 
-import io.doodlebot.backend.module
+import io.toodlebot.backend.module
 import io.ktor.http.*
 import io.ktor.server.testing.*
 import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class ApplicationTest {
     /*@Test
@@ -21,8 +20,8 @@ class ApplicationTest {
         }
     }*/
 
-    @Test
-    fun `Return bad request if doodleId has no doodle, transform NotFoundException to 404 Not Found`() {
+    /*@Test
+    fun `Return bad request if toodleId has no Toodle, transform NotFoundException to 404 Not Found`() {
         // Given
         val randomUuid = UUID.randomUUID()
 
@@ -45,10 +44,10 @@ class ApplicationTest {
                 assertEquals(HttpStatusCode.BadRequest, response.status())
             }
         }
-    }
+    }*/
 
     /*@Test
-    fun `Redirect to view if Doodle is closed`() {
+    fun `Redirect to view if Toodle is closed`() {
         // Given
         withTestApplication({ module(testing = true) }) {
             // When
@@ -56,8 +55,8 @@ class ApplicationTest {
                 addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
                 setBody("[\"2020-10-01\"]")
             }
-            val doodleId = call1.parameters["doodleId"]!!
-            handleRequest(HttpMethod.Post, "/close/$doodleId") {
+            val toodleId = call1.parameters["toodleId"]!!
+            handleRequest(HttpMethod.Post, "/close/$toodleId") {
                 addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
                 setBody("[\"2020-10-01\"]")
             }
@@ -65,7 +64,7 @@ class ApplicationTest {
             // Then
             // TODO: This does not work!
             // Maybe each handleRequest() resets the DB? Look at log.
-            val call2 = handleRequest(HttpMethod.Get, "/answer/$doodleId") {
+            val call2 = handleRequest(HttpMethod.Get, "/answer/$toodleId") {
                 addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
                 setBody("[\"2020-10-01\"]")
             }
@@ -76,15 +75,15 @@ class ApplicationTest {
     }*/
 
     /*
-    * `Return bad request if doodleId has no doodle (on every endpoint)`
+    * `Return bad request if toodleId has no toodle (on every endpoint)`
     * `Answers with yesDates outside of the proposed dates should return specific status`
     * `Malformed UUID should return Bad Request`
-    * `Changing closed Doodle should return Forbidden`
+    * `Changing closed Toodle should return Forbidden`
     *
     *
     *
     *
-    * `Throw if doodleId is null` / `has wrong format`
+    * `Throw if toodleId is null` / `has wrong format`
     * `Throw if date list is null` / `dates have wrong format`
     * -> Basically check if correct Exceptions are thrown as expected or if method works
     * */

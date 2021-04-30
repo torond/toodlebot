@@ -83,7 +83,7 @@
 </div>
 
 <script>
-    // Initially disable confirm button on Setup Doodle
+    // Initially disable confirm button on Setup Toodle
     {{#config.isSetup}}
     document.getElementById("confirm-button").disabled = true;
     {{/config.isSetup}}
@@ -169,7 +169,7 @@
 
 
     xhr = new XMLHttpRequest();
-    xhr.open('POST', '{{config.confirmRecipientUrl}}{{#doodleId}}/{{doodleId}}{{/doodleId}}');
+    xhr.open('POST', '{{config.confirmRecipientUrl}}{{#toodleId}}/{{toodleId}}{{/toodleId}}');
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.onload = function () {
         if (xhr.status !== 200) {
