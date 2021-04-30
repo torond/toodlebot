@@ -2,6 +2,7 @@ package io.toodlebot.backend.service
 
 import io.toodlebot.backend.model.*
 import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -14,7 +15,12 @@ object DatabaseFactory {
         Database.connect("jdbc:sqlite:./data/data.db?foreign_keys=on", "org.sqlite.JDBC")
         TransactionManager.manager.defaultIsolationLevel = Connection.TRANSACTION_SERIALIZABLE
         transaction {
-            drop(Toodles)
+            SchemaUtils.createMissingTablesAndColumns(Toodles,
+                    Dates,
+                    Participants,
+                    Participations,
+                    Chats)
+            /*drop(Toodles)
             drop(Dates)
             drop(Participants)
             drop(Participations)
@@ -23,7 +29,7 @@ object DatabaseFactory {
             create(Dates)
             create(Participants)
             create(Participations)
-            create(Chats)
+            create(Chats)*/
         }
     }
 
