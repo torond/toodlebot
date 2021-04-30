@@ -1,7 +1,7 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Run &amp; Reload" type="CompoundRunConfigurationType">
-    <toRun name="DoodleBot [run]" type="GradleRunConfiguration" />
-    <toRun name="DoodleBot [installDist]" type="GradleRunConfiguration" />
+    <toRun name="toodlebot [run]" type="GradleRunConfiguration" />
+    <toRun name="toodlebot [installDist]" type="GradleRunConfiguration" />
     <method v="2" />
   </configuration>
 </component>
