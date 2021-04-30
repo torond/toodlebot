@@ -5,6 +5,7 @@ import com.elbekD.bot.types.InlineKeyboardButton
 import com.elbekD.bot.types.InlineKeyboardMarkup
 import com.elbekD.bot.types.LoginUrl
 import com.elbekD.bot.util.keyboard.KeyboardFactory
+import io.doodlebot.backend.model.Toodle
 import io.doodlebot.backend.service.DatabaseService
 import io.doodlebot.backend.service.Env
 import java.util.*
@@ -61,53 +62,34 @@ fun setup(databaseService: DatabaseService): Bot {
     return bot
 }
 
-fun Bot.sendShareableDoodle(chatId: String, doodleId: String, title: String) {
+fun Bot.sendShareableDoodle(chatId: String, toodle: Toodle) {
     this.sendMessage(
         chatId,
-        "Doodle \"$title\" created. Use the buttons share the Doodle to a group or close it.",
+        "Toodle \"${toodle.title}\" created. Use the buttons share the it to a group, close, edit or delete it. It will automatically expire if there is no activity for one week.",
         markup = InlineKeyboardMarkup(
             KeyboardFactory.inlineMarkup(
                 listOf(
                     InlineKeyboardButton(
                         "Share Doodle",
-                        url = "https://t.me/${Env.botUsername}?startgroup=$doodleId"
+                        url = "https://t.me/${Env.botUsername}?startgroup=${toodle.id}"
                     ),
                     InlineKeyboardButton(
                         "Edit Doodle",
                         login_url = LoginUrl(
-                            "${Env.host}:${Env.port}/setup/$doodleId"
+                            "${Env.host}:${Env.port}/setup/${toodle.id}"
                         )
                     ),
                     InlineKeyboardButton(
                         "Close Doodle",
                         login_url = LoginUrl(
-                            "${Env.host}:${Env.port}/close/$doodleId"
+                            "${Env.host}:${Env.port}/close/${toodle.id}"
                         )
                     ),
                     InlineKeyboardButton(
                             "Delete Doodle",
                             login_url = LoginUrl(
-                                    "${Env.host}:${Env.port}/delete/$doodleId"
+                                    "${Env.host}:${Env.port}/delete/${toodle.id}"
                             )
-                    )
-                )
-            )
-        )
-    )
-}
-
-fun Bot.sendViewButton(chatId: String, doodleId: String) {
-    this.sendMessage(
-        chatId,
-        "The Doodle was closed. Use the button to view the results.",
-        markup = InlineKeyboardMarkup(
-            KeyboardFactory.inlineMarkup(
-                listOf(
-                    InlineKeyboardButton(
-                        "View Doodle",
-                        login_url = LoginUrl(
-                            "${Env.host}:${Env.port}/view/$doodleId"
-                        )
                     )
                 )
             )
@@ -122,7 +104,7 @@ fun Bot.sendViewButtonToChats(chatIds: List<Long>, doodleId: String) {
     for (chatId in chatIds) {
         this.sendMessage(
             chatId,
-            "The Doodle was closed. Use the button to view the results.",
+            "The Doodle was closed. Use the button to view the results. It'll be deleted automatically in a week.",
             markup = InlineKeyboardMarkup(
                 KeyboardFactory.inlineMarkup(
                     listOf(
