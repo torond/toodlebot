@@ -11,7 +11,6 @@ import java.sql.Connection
 
 object DatabaseFactory {
     init {
-        println("Initializing database")
         Database.connect("jdbc:sqlite:./data/data.db?foreign_keys=on", "org.sqlite.JDBC")
         TransactionManager.manager.defaultIsolationLevel = Connection.TRANSACTION_SERIALIZABLE
         transaction {

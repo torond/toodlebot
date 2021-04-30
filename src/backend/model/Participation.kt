@@ -4,6 +4,9 @@ import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.Table
 
+/**
+ * Generates the table to persist participation information
+ */
 object Participations: Table() {
     val date = reference("date", Dates)
     val participant = reference("participant", Participants)
@@ -11,6 +14,10 @@ object Participations: Table() {
     override val primaryKey = PrimaryKey(date, participant)
 }
 
+/**
+ * Holds the metadata of a participation.
+ * Note that the properties are only entity IDs.
+ */
 data class Participation(
         val dateId: EntityID<Int>,
         val participantId: EntityID<Int>

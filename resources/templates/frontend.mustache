@@ -49,10 +49,6 @@
             display: block;
             background: green;
         }
-
-        .final.no {
-            background: indianred;
-        }
     </style>
 
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
@@ -88,6 +84,7 @@
     document.getElementById("confirm-button").disabled = true;
     {{/config.isSetup}}
 
+    // Set default value of title input
     {{#config.isSetup}}
         const defaultTitle = new Date().toDateString()
         document.getElementById("titleInput").placeholder = `${defaultTitle} (Tap to change)`
@@ -96,6 +93,7 @@
         {{/title}}
     {{/config.isSetup}}
 
+    // Define data constants
     {{#numberOfParticipants}}
     const numberOfParticipants = {{numberOfParticipants}};
     {{/numberOfParticipants}}
@@ -108,10 +106,7 @@
     const finalDates = [{{#content}}"{{.}}", {{/content}}];
     {{/finalDates}}
 
-    /*function getNumberOfParticipants(date) {
-        return participations[date.format]
-    }*/
-
+    // Define helper functions
     function formatDate(date) {
         return date.getFullYear() + '-'
                 + ('0' + (date.getMonth() + 1)).slice(-2) + '-'
@@ -134,6 +129,7 @@
         }
     }
 
+    // Configure flatpickr
     const fp = flatpickr("#pkr", {
         inline: true,
         disableMobile: "true",
@@ -141,10 +137,15 @@
         mode: "multiple",
         monthSelectorType: "static",
         onDayCreate: function (dObj, dStr, fp, dayElem) {
+            // onDayCreate gets executed for each day box
             var formattedDate = formatDate(dayElem.dateObj)
+
+            // Add pin on current day
             if (isToday(dayElem.dateObj)) {
                 dayElem.innerHTML += "<span class='pin'></span>"
             }
+
+            // Show participations
             {{#participations}}
                 const participantsToday = participations[formattedDate];
                 if (participantsToday != null) {
@@ -152,6 +153,8 @@
                     dayElem.innerHTML += "<span class='test'>(" + participantsToday.length.toString() + "/{{numberOfParticipants}})</span>";
                 }
             {{/participations}}
+
+            // Mark final dates
             {{#finalDates}}
                 if (finalDates.includes(formattedDate)) {
                     dayElem.innerHTML += "<span class='final'></span>"
@@ -159,7 +162,8 @@
             {{/finalDates}}
         },
         {{#config.isSetup}}
-        onChange: function(selectedDates, dateStr, instance) {
+            // Enable confirm button when one or more dates have been selected
+            onChange: function(selectedDates, dateStr, instance) {
             document.getElementById("confirm-button").disabled = selectedDates.length === 0;
         },
         {{/config.isSetup}}
@@ -167,7 +171,7 @@
         {{#enabledDates}}enable: [{{#content}}"{{.}}", {{/content}}],{{/enabledDates}}
     });
 
-
+    // Create a request to send data back to the server
     xhr = new XMLHttpRequest();
     xhr.open('POST', '{{config.confirmRecipientUrl}}{{#toodleId}}/{{toodleId}}{{/toodleId}}');
     xhr.setRequestHeader('Content-Type', 'application/json');
@@ -181,6 +185,7 @@
     document.getElementById("confirm-button").addEventListener("click",
             function () {
                 {{#config.isSetup}}
+                    // If this is a setup Toodle, we also need the title
                     const titleInput = document.getElementById('titleInput');
                     if (!titleInput.value) {
                         titleInput.value = defaultTitle;
@@ -194,6 +199,7 @@
                     )
                 {{/config.isSetup}}
                 {{^config.isSetup}}
+                    // Otherwise only the selected dates
                     xhr.send(JSON.stringify(fp.selectedDates.map(x => formatDate(x))))
                 {{/config.isSetup}}
 

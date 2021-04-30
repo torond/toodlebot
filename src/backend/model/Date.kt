@@ -4,6 +4,9 @@ import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.`java-time`.date
 
+/**
+ * Generates the table to persist date information
+ */
 object Dates : IntIdTable() {
     val date = date("date")
     val isFinal = bool("isFinal")

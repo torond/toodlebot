@@ -5,6 +5,9 @@ import org.jetbrains.exposed.sql.`java-time`.date
 import java.time.LocalDate
 import java.util.*
 
+/**
+ * Generates the table to persist Toodles
+ */
 object Toodles : UUIDTable() {
     val title = varchar("title", 255)
     val isClosed = bool("isClosed")
@@ -13,6 +16,9 @@ object Toodles : UUIDTable() {
     val expirationDate = date("expirationDate")
 }
 
+/**
+ * Holds the metadata of a Toodle.
+ */
 data class Toodle(
         val title: String,
         val id: UUID,
