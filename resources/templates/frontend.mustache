@@ -76,7 +76,7 @@
 {{/numberOfParticipants}}
 
 <div class="custom-btn-holder">
-    <button id="cancel-button" type="button" onclick="window.location.href='tg://resolve'">Cancel</button>
+    <button id="cancel-button" type="button" onclick=returnToTelegram()>Cancel</button>
     {{#config.hasConfirmButton}}
     <button id="confirm-button" type="button">Confirm</button>
     {{/config.hasConfirmButton}}
@@ -125,6 +125,15 @@
                 someDate.getFullYear() === today.getFullYear()
     }
 
+    const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+    function returnToTelegram() {
+        if (/android/i.test(userAgent)) {
+            window.location.href='tg://resolve'
+        } else {  // Workaround for iOS (and other) devices.
+            window.location.href='tg://resolve/?domain={{botUsername}}'
+        }
+    }
+
     const fp = flatpickr("#pkr", {
         inline: true,
         disableMobile: "true",
@@ -166,11 +175,7 @@
         if (xhr.status !== 200) {
             alert('Request failed. Returned status of ' + xhr.status);
         } else {
-            console.log(xhr.response)
-            window.location = "tg://resolve"///?domain=chssrnm"//{{botUsername}}"
-            // Maybe "https://t.me/{{botUsername}}"
-            //window.close()
-            //window.location.href = "tg://resolve/{{botUsername}}"
+            returnToTelegram();
         }
     };
     document.getElementById("confirm-button").addEventListener("click",
