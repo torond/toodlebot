@@ -21,6 +21,10 @@ import java.util.*
 import io.doodlebot.bot.setup
 import io.ktor.http.content.*
 import io.ktor.sessions.*
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.time.delay
+import java.time.Duration
 import kotlin.concurrent.thread
 
 const val TEMPLATE_PATH = "templates"
@@ -37,6 +41,17 @@ fun Application.module(testing: Boolean = false) {
     thread(start = true) {
         bot.start()
     }
+
+    // Delete expired Doodles once per day
+    // TODO: Better way of scheduling (with start time)
+    GlobalScope.launch {
+        while (true) {
+            delay(Duration.ofDays(1))
+            databaseService.deleteExpiredToodles()
+            println("Delete expired")
+        }
+    }
+
     install(Mustache) { mustacheFactory = DefaultMustacheFactory(TEMPLATE_PATH) }
     install(ContentNegotiation) { gson {} }
     install(StatusPages) {
@@ -206,7 +221,7 @@ fun Application.module(testing: Boolean = false) {
                     loginSession.userId
                 )
                 // Send reply to user
-                bot.sendShareableDoodle(loginSession.userId, doodle.id.toString(), title)
+                bot.sendShareableDoodle(loginSession.userId, doodle)
                 call.respond(HttpStatusCode.OK, doodle.id)
             } else {  // Update data
                 databaseService.assertIsAdmin(doodleId, loginSession.userId)
@@ -215,6 +230,7 @@ fun Application.module(testing: Boolean = false) {
                     doodleId,
                     jsonData.dates.map { LocalDate.parse(it, DateUtil.inputFormatter) })
                 databaseService.updateTitleOfToodle(doodleId, jsonData.title)
+                databaseService.refreshExpirationDate(doodleId)
                 call.respond(HttpStatusCode.OK)
             }
         }
@@ -256,10 +272,12 @@ fun Application.module(testing: Boolean = false) {
                 val participantId = databaseService.addParticipantToToodle(doodleId, loginSession.userId)
                 // replace following with updateParticipations
                 databaseService.updateParticipations(doodleId, participantId, yesDates)
+                databaseService.refreshExpirationDate(doodleId)
                 call.respond(HttpStatusCode.OK)
             } else {
                 val participantId = databaseService.getParticipantId(doodleId, loginSession.userId) ?: throw NotFoundException("Participant with userId ${loginSession.userId} not found")
                 databaseService.updateParticipations(doodleId, participantId, yesDates)
+                databaseService.refreshExpirationDate(doodleId)
                 call.respond(HttpStatusCode.OK)
             }
 
@@ -301,6 +319,7 @@ fun Application.module(testing: Boolean = false) {
             val sharedGroupIds = databaseService.getChatIdsOfToodle(doodleId)
 
             bot.sendViewButtonToChats(sharedGroupIds, doodleId.toString())
+            databaseService.refreshExpirationDate(doodleId)
             call.respond(HttpStatusCode.OK)
         }
 

@@ -1,6 +1,8 @@
 package io.doodlebot.backend.model
 
 import org.jetbrains.exposed.dao.id.UUIDTable
+import org.jetbrains.exposed.sql.`java-time`.date
+import java.time.LocalDate
 import java.util.*
 
 object Toodles : UUIDTable() {
@@ -8,6 +10,7 @@ object Toodles : UUIDTable() {
     val isClosed = bool("isClosed")
     val numberOfParticipants = integer("numberOfParticipants")
     val adminUserId = varchar("adminUserId", 255)
+    val expirationDate = date("expirationDate")
 }
 
 data class Toodle(
@@ -15,5 +18,6 @@ data class Toodle(
         val id: UUID,
         val isClosed: Boolean = false,
         val numberOfParticipants: Int = 0,
-        val adminUserId: String
+        val adminUserId: String,
+        val expirationDate: LocalDate
 )

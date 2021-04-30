@@ -21,6 +21,7 @@ class DatabaseService {
                 it[this.isClosed] = Op.FALSE
                 it[this.numberOfParticipants] = 0
                 it[this.adminUserId] = adminUserId
+                it[this.expirationDate] = LocalDate.now().plusWeeks(1)
             }
         }
 
@@ -318,6 +319,24 @@ class DatabaseService {
     }
 
     /**
+     * Refreshes the expiration date of a Toodle to one week from now.
+     */
+    suspend fun refreshExpirationDate(toodleId: UUID) = dbQuery {
+        Toodles.update({ Toodles.id eq toodleId }) {
+            it[expirationDate] = LocalDate.now().plusWeeks(1)
+        }
+    }
+
+    /**
+     * Deletes all Toodles where the expiration date has passed.
+     */
+    suspend fun deleteExpiredToodles() = dbQuery {
+        Toodles.deleteWhere {
+            Toodles.expirationDate less LocalDate.now()
+        }
+    }
+
+    /**
      * Converts the given [row] to a [Toodle].
      */
     private fun toToodle(row: ResultRow): Toodle =
@@ -326,7 +345,8 @@ class DatabaseService {
                     title = row[Toodles.title],
                     isClosed = row[Toodles.isClosed],
                     numberOfParticipants = row[Toodles.numberOfParticipants],
-                    adminUserId = row[Toodles.adminUserId]
+                    adminUserId = row[Toodles.adminUserId],
+                    expirationDate = row[Toodles.expirationDate]
             )
 
     /**
