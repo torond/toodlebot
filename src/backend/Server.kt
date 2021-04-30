@@ -337,7 +337,8 @@ fun Application.module(testing: Boolean = false) {
             databaseService.refreshExpirationDate(toodleId)
 
             val sharedGroupIds = databaseService.getChatIdsOfToodle(toodleId)
-            bot.sendViewButtonToChats(sharedGroupIds, toodleId.toString())
+            val toodle = databaseService.getToodleById(toodleId)
+            bot.sendViewButtonToChats(sharedGroupIds, toodle)
             call.respond(HttpStatusCode.OK)
         }
 
