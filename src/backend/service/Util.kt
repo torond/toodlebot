@@ -93,14 +93,14 @@ data class LoginSession(val userId: String)
 object Env {
     private val props = Properties()
     private val inputStream = FileInputStream("environment.properties")
-    val host: String
+    val domain: String
     val port: String
     val botToken: String
     val botUsername: String
 
     init {
         props.load(inputStream)
-        host = props.getProperty("host")
+        domain = props.getProperty("domain")
         port = props.getProperty("port")
         botToken = props.getProperty("bot_token")
         botUsername = props.getProperty("bot_username")
