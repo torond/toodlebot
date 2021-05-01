@@ -13,7 +13,7 @@ import java.util.*
 fun setup(databaseService: DatabaseService): Bot {
 
     val bot = Bot.createPolling(Env.botUsername, Env.botToken)
-    //println("Server URL for setup: ${Env.host}:${Env.port}/setup")
+    //println("Server URL for setup: ${Env.domain}/setup")
 
     bot.onCommand("/start") { msg, value ->
         if (value == null) {  // Someone creates a Toodle
@@ -25,7 +25,7 @@ fun setup(databaseService: DatabaseService): Bot {
                         listOf(
                             InlineKeyboardButton(
                                 "Create Toodle",
-                                login_url = LoginUrl("${Env.host}:${Env.port}/setup", request_write_access = true)
+                                login_url = LoginUrl("${Env.domain}/setup", request_write_access = true)
                             )
                         )
                     )
@@ -47,7 +47,7 @@ fun setup(databaseService: DatabaseService): Bot {
                                 InlineKeyboardButton(
                                     "Answer Toodle / Edit Answer",
                                     login_url = LoginUrl(
-                                        "${Env.host}:${Env.port}/answer/$value"
+                                        "${Env.domain}/answer/$value"
                                     )
                                 )
                             )
@@ -78,19 +78,19 @@ fun Bot.sendShareableToodle(chatId: String, toodle: Toodle) {
                     InlineKeyboardButton(
                         "Edit Toodle",
                         login_url = LoginUrl(
-                            "${Env.host}:${Env.port}/setup/${toodle.id}"
+                            "${Env.domain}/setup/${toodle.id}"
                         )
                     ),
                     InlineKeyboardButton(
                         "Close Toodle",
                         login_url = LoginUrl(
-                            "${Env.host}:${Env.port}/close/${toodle.id}"
+                            "${Env.domain}/close/${toodle.id}"
                         )
                     ),
                     InlineKeyboardButton(
                         "Delete Toodle",
                         login_url = LoginUrl(
-                                "${Env.host}:${Env.port}/delete/${toodle.id}"
+                                "${Env.domain}/delete/${toodle.id}"
                         )
                     )
                 )
@@ -113,7 +113,7 @@ fun Bot.sendViewButtonToChats(chatIds: List<Long>, toodle: Toodle) {
                         InlineKeyboardButton(
                             "View Toodle",
                             login_url = LoginUrl(
-                                "${Env.host}:${Env.port}/view/${toodle.id}"
+                                "${Env.domain}/view/${toodle.id}"
                             )
                         )
                     )
