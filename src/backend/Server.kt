@@ -190,7 +190,19 @@ fun Application.module(testing: Boolean = false) {
         if (defaultDates != null) mappings.add("defaultDates" to mapOf("content" to defaultDates))  // Maybe add ifNotNull
         if (finalDates != null) mappings.add("finalDates" to mapOf("content" to finalDates))
         if (numberOfParticipants != null) mappings.add("numberOfParticipants" to numberOfParticipants)
-        if (participations != null) mappings.add("participations" to mapOf("content" to participations.entries))
+
+        // Manually serialize participations
+        //string = { "2021-05-20": [1, 4, 5], "2021-05-13": [2, 4] }
+        if (participations != null) {
+            val participationsString = participations
+                    .map{ entry -> "\"${entry.key.format(DateUtil.inputFormatter)}\": ${entry.value}" }
+                    .joinToString(", ", "{", "}" )
+            println("participationsString: $participationsString")
+            mappings.add("participations" to participationsString)
+        }
+
+
+
         return mappings.map { it.first to it.second }.toMap()
     }
 
