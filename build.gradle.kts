@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.dsl.Coroutines
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-val ktor_version="1.4.1"
+val ktor_version="1.5.2"  // >=1.5.3 throws io.netty.channel.ChannelInitializer - Failed to initialize a channel., java.lang.NoSuchMethodError
 val kotlin_version="1.4.20"
 val logback_version="1.2.1"
 val exposed_version="0.27.1"
@@ -41,6 +41,12 @@ dependencies {
     implementation("org.xerial:sqlite-jdbc:3.30.1")
     implementation("commons-codec:commons-codec:1.15")
     implementation("io.ktor:ktor-server-sessions:$ktor_version")
+}
+
+tasks.withType<KotlinCompile>().configureEach {
+    kotlinOptions {
+        useIR = true
+    }
 }
 
 kotlin.sourceSets["main"].kotlin.srcDirs("src")
