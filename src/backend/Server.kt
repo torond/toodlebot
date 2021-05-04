@@ -197,7 +197,6 @@ fun Application.module(testing: Boolean = false) {
             val participationsString = participations
                     .map{ entry -> "\"${entry.key.format(DateUtil.inputFormatter)}\": ${entry.value}" }
                     .joinToString(", ", "{", "}" )
-            println("participationsString: $participationsString")
             mappings.add("participations" to participationsString)
         }
 
