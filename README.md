@@ -1,7 +1,7 @@
 # [<img src="/resources/logo-circle.svg" alt="ToodleBot Logo" width="100px" height="100px" >](https://github.com/torond/toodlebot) ToodleBot
 Telegram bot for scheduling meetings and events directly from Telegram.  
 Works best on smartphones.  
-To use this bot, message [@thetoodlebot](https://t.me/thetoodlebot) to get started!
+Message [@thetoodlebot](https://t.me/thetoodlebot) to get started!
 
 ## Deployment Setup
 Follow these steps to deploy an instance of ToodleBot to a Uberspace.
@@ -11,32 +11,33 @@ Follow these steps to deploy an instance of ToodleBot to a Uberspace.
 3. (Optional) Add a custom domain:
    ```bash
    ssh <username>@<hostname> "uberspace web domain add isabell.example"```
-3.1 (Optional) Update the DNS records with the IP adresses given from the previous command.
-4. Create a Telegram bot with BotFather and set its domain to the Uberspace domain or your custom domain.
-5. Configure the backend:
+4. (Optional) Update the DNS records with the IP adresses given from the previous command.
+5. Create a Telegram bot with BotFather and set its domain to the Uberspace domain or your custom domain.
+6. Configure the backend:
    ```bash
    ssh <username>@<hostname> "uberspace web backend set <your-domain> --http --port 8088"```
-6. Get the executable (or run `./gradlew build` to obtain the `.jar` and copy that over to the server):
+7. Get the executable (or run `./gradlew build` to obtain the `.jar` and copy that over to the server):
    ```bash
    ssh <username>@<hostname> "wget https://github.com/torond/toodlebot/releases/download/0.1.2/toodlebot-0.1.2.jar"```
-7. Add config file:
+8. Add config file:
    ```bash
    ssh <username>@<hostname> "echo \"domain=<domain of server>                        
    port=8088
    bot_username=<name of the Telegram bot without @>
    bot_token=<token of the Telegram bot>\" > environment.properties"```
-8. Create data folder in home directory (todo: should be done by app itself):
+9. Create data folder in home directory (todo: should be done by app itself):
    ```bash
    ssh <username>@<hostname> "mkdir data"```
 9. Add `supervisord` script and run the app:
    ```bash
-   ssh toodle@grus.uberspace.de "echo \"[program:toodlebot]
+   ssh <username>@<hostname> "echo \"[program:toodlebot]
    command=java -jar ~/toodlebot-0.1.0.jar
    startsecs=20
    autostart=false\" > ~/etc/services.d/toodlebot.ini
    supervisorctl reread
    supervisorctl update
    supervisorctl start toodlebot"```
+
 The bot should now respond to `/start` and you should be able to create Toodles.
 
 
