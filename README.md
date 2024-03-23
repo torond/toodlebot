@@ -10,24 +10,29 @@ Follow these steps to deploy an instance of ToodleBot to a Uberspace.
 2. Add an SSH key under Logins in the dashboard.
 3. (Optional) Add a custom domain:
    ```bash
-   ssh <username>@<hostname> "uberspace web domain add isabell.example"```
+   ssh <username>@<hostname> "uberspace web domain add isabell.example"
+   ```
 4. (Optional) Update the DNS records with the IP adresses given from the previous command.
 5. Create a Telegram bot with BotFather and set its domain to the Uberspace domain or your custom domain.
 6. Configure the backend:
    ```bash
-   ssh <username>@<hostname> "uberspace web backend set <your-domain> --http --port 8088"```
+   ssh <username>@<hostname> "uberspace web backend set <your-domain> --http --port 8088"
+   ```
 7. Get the executable (or run `./gradlew build` to obtain the `.jar` and copy that over to the server):
    ```bash
-   ssh <username>@<hostname> "wget https://github.com/torond/toodlebot/releases/download/0.1.2/toodlebot-0.1.2.jar"```
+   ssh <username>@<hostname> "wget https://github.com/torond/toodlebot/releases/download/0.1.2/toodlebot-0.1.2.jar"
+   ```
 8. Add config file:
    ```bash
    ssh <username>@<hostname> "echo \"domain=<domain of server>                        
    port=8088
    bot_username=<name of the Telegram bot without @>
-   bot_token=<token of the Telegram bot>\" > environment.properties"```
+   bot_token=<token of the Telegram bot>\" > environment.properties"
+   ```
 9. Create data folder in home directory (todo: should be done by app itself):
    ```bash
-   ssh <username>@<hostname> "mkdir data"```
+   ssh <username>@<hostname> "mkdir data"
+   ```
 9. Add `supervisord` script and run the app:
    ```bash
    ssh <username>@<hostname> "echo \"[program:toodlebot]
@@ -36,7 +41,8 @@ Follow these steps to deploy an instance of ToodleBot to a Uberspace.
    autostart=false\" > ~/etc/services.d/toodlebot.ini
    supervisorctl reread
    supervisorctl update
-   supervisorctl start toodlebot"```
+   supervisorctl start toodlebot"
+   ```
 
 The bot should now respond to `/start` and you should be able to create Toodles.
 
