@@ -1,31 +1,31 @@
 package io.toodlebot.bot
 
-import com.elbekD.bot.Bot
-import com.elbekD.bot.types.InlineKeyboardButton
-import com.elbekD.bot.types.InlineKeyboardMarkup
-import com.elbekD.bot.types.LoginUrl
-import com.elbekD.bot.util.keyboard.KeyboardFactory
+import com.elbekd.bot.Bot
+import com.elbekd.bot.model.toChatId
+import com.elbekd.bot.types.InlineKeyboardButton
+import com.elbekd.bot.types.InlineKeyboardMarkup
+import com.elbekd.bot.types.LoginUrl
+import com.elbekd.bot.util.keyboard.KeyboardFactory
 import io.toodlebot.backend.model.Toodle
 import io.toodlebot.backend.service.DatabaseService
 import io.toodlebot.backend.service.Env
 import java.util.*
 
 fun setup(databaseService: DatabaseService): Bot {
-
-    val bot = Bot.createPolling(Env.botUsername, Env.botToken)
+    val bot = Bot.createPolling(token = Env.botToken, username = Env.botUsername)
     //println("Server URL for setup: ${Env.domain}/setup")
 
-    bot.onCommand("/start") { msg, value ->
+    bot.onCommand("/start") { (msg, value) ->
         if (value == null) {  // Someone creates a Toodle
             bot.sendMessage(
-                msg.chat.id,
+                    chatId = msg.chat.id.toChatId(),
                 "Click the button below to create a new Toodle!",
-                markup = InlineKeyboardMarkup(
+                replyMarkup = InlineKeyboardMarkup(
                     KeyboardFactory.inlineMarkup(
                         listOf(
                             InlineKeyboardButton(
                                 "Create Toodle",
-                                login_url = LoginUrl("${Env.domain}/setup", request_write_access = true)
+                                loginUrl = LoginUrl("${Env.domain}/setup", requestWriteAccess = true)
                             )
                         )
                     )
@@ -39,14 +39,14 @@ fun setup(databaseService: DatabaseService): Bot {
             if(!chatIds.contains(msg.chat.id)) {
                 databaseService.addChatIdToToodle(toodleId, msg.chat.id)
                 bot.sendMessage(
-                    msg.chat.id,  // ID of the chosen group chat
+                        chatId = msg.chat.id.toChatId(), // ID of the chosen group chat
                     "Answer the Toodle \"${toodle.title}\" with the button below. You can also edit your answer.",
-                    markup = InlineKeyboardMarkup(
+                    replyMarkup = InlineKeyboardMarkup(
                         KeyboardFactory.inlineMarkup(
                             listOf(
                                 InlineKeyboardButton(
                                     "Answer Toodle / Edit Answer",
-                                    login_url = LoginUrl(
+                                    loginUrl = LoginUrl(
                                         "${Env.domain}/answer/$value"
                                     )
                                 )
@@ -64,11 +64,11 @@ fun setup(databaseService: DatabaseService): Bot {
 /**
  * Sends a message with buttons to share, edit, close and delete the [toodle] to the given [chatId].
  */
-fun Bot.sendShareableToodle(chatId: String, toodle: Toodle) {
+suspend fun Bot.sendShareableToodle(chatId: String, toodle: Toodle) {
     this.sendMessage(
-        chatId,
+            chatId = chatId.toChatId(),
         "Toodle \"${toodle.title}\" created. Use the buttons share, close, edit or delete it. It will automatically expire if there is no activity for one week.",
-        markup = InlineKeyboardMarkup(
+        replyMarkup = InlineKeyboardMarkup(
             KeyboardFactory.inlineMarkup(
                 listOf(
                     InlineKeyboardButton(
@@ -77,19 +77,19 @@ fun Bot.sendShareableToodle(chatId: String, toodle: Toodle) {
                     ),
                     InlineKeyboardButton(
                         "Edit Toodle",
-                        login_url = LoginUrl(
+                        loginUrl = LoginUrl(
                             "${Env.domain}/setup/${toodle.id}"
                         )
                     ),
                     InlineKeyboardButton(
                         "Close Toodle",
-                        login_url = LoginUrl(
+                        loginUrl = LoginUrl(
                             "${Env.domain}/close/${toodle.id}"
                         )
                     ),
                     InlineKeyboardButton(
                         "Delete Toodle",
-                        login_url = LoginUrl(
+                        loginUrl = LoginUrl(
                                 "${Env.domain}/delete/${toodle.id}"
                         )
                     )
@@ -102,17 +102,17 @@ fun Bot.sendShareableToodle(chatId: String, toodle: Toodle) {
 /**
  * Sends buttons /view/<UUID> to the given chatIds
  */
-fun Bot.sendViewButtonToChats(chatIds: List<Long>, toodle: Toodle) {
+suspend fun Bot.sendViewButtonToChats(chatIds: List<Long>, toodle: Toodle) {
     for (chatId in chatIds) {
         this.sendMessage(
-            chatId,
+                chatId = chatId.toChatId(),
             "The Toodle \"${toodle.title}\" was closed. Use the button to view the results. It'll be deleted automatically in a week.",
-            markup = InlineKeyboardMarkup(
+            replyMarkup = InlineKeyboardMarkup(
                 KeyboardFactory.inlineMarkup(
                     listOf(
                         InlineKeyboardButton(
                             "View Toodle",
-                            login_url = LoginUrl(
+                            loginUrl = LoginUrl(
                                 "${Env.domain}/view/${toodle.id}"
                             )
                         )

@@ -1,7 +1,7 @@
 package io.toodlebot.backend.model
 
 import org.jetbrains.exposed.dao.id.UUIDTable
-import org.jetbrains.exposed.sql.`java-time`.date
+import org.jetbrains.exposed.sql.javatime.date
 import java.time.LocalDate
 import java.util.*
 

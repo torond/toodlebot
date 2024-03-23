@@ -1,21 +1,21 @@
-import org.jetbrains.kotlin.gradle.dsl.Coroutines
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-val ktor_version="1.5.2"  // >=1.5.3 throws io.netty.channel.ChannelInitializer - Failed to initialize a channel., java.lang.NoSuchMethodError
-val kotlin_version="1.4.20"
-val logback_version="1.2.1"
-val exposed_version="0.27.1"
+//val ktor_version="1.5.2"  // >=1.5.3 throws io.netty.channel.ChannelInitializer - Failed to initialize a channel., java.lang.NoSuchMethodError
+val ktor_version="1.6.8"
+val kotlin_version="1.7.10"
+val logback_version="1.3.14"
+val exposed_version="0.39.2"
 
 plugins {
     application
-    kotlin("jvm") version "1.4.20"
+    kotlin("jvm") version "1.7.10"
 }
 
 group = "io.toodlebot"
-version = "0.1.1"
+version = "0.1.1-test"
 
 application {
-    mainClassName = "io.toodlebot.ApplicationKt"
+    mainClass.set("io.toodlebot.ApplicationKT")
 }
 
 tasks.withType<Jar> {
@@ -50,20 +50,14 @@ dependencies {
     implementation("io.ktor:ktor-mustache:$ktor_version")
     implementation("io.ktor:ktor-gson:$ktor_version")
     testImplementation("io.ktor:ktor-server-tests:$ktor_version")
-    implementation("com.github.elbekD:kt-telegram-bot:1.3.8")
+    implementation("com.github.elbekD:kt-telegram-bot:2.2.0")
     implementation("org.jetbrains.exposed:exposed-core:$exposed_version")
     implementation("org.jetbrains.exposed:exposed-dao:$exposed_version")
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposed_version")
     implementation("org.jetbrains.exposed:exposed-java-time:$exposed_version")
-    implementation("org.xerial:sqlite-jdbc:3.30.1")
+    implementation("org.xerial:sqlite-jdbc:3.34.0")
     implementation("commons-codec:commons-codec:1.15")
     implementation("io.ktor:ktor-server-sessions:$ktor_version")
-}
-
-tasks.withType<KotlinCompile>().configureEach {
-    kotlinOptions {
-        useIR = true
-    }
 }
 
 kotlin.sourceSets["main"].kotlin.srcDirs("src")

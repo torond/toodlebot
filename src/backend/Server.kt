@@ -39,7 +39,9 @@ fun Application.module(testing: Boolean = false) {
 
     val bot = setup(databaseService)
     thread(start = true) {
+        println("about to start bot")
         bot.start()
+        println("started bot")
     }
 
     // Delete expired Toodles once per day

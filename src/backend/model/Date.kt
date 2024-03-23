@@ -2,7 +2,7 @@ package io.toodlebot.backend.model
 
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
-import org.jetbrains.exposed.sql.`java-time`.date
+import org.jetbrains.exposed.sql.javatime.date
 
 /**
  * Generates the table to persist date information
