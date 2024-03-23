@@ -12,7 +12,7 @@ plugins {
 }
 
 group = "io.toodlebot"
-version = "0.0.1"
+version = "0.1.1"
 
 application {
     mainClassName = "io.toodlebot.ApplicationKt"
@@ -22,6 +22,17 @@ tasks.withType<Jar> {
     manifest {
         attributes["Main-Class"] = "io.toodlebot.ApplicationKt"
     }
+
+    // To avoid the duplicate handling strategy error
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    // To add all of the dependencies
+    from(sourceSets.main.get().output)
+
+    dependsOn(configurations.runtimeClasspath)
+    from({
+        configurations.runtimeClasspath.get().filter { it.name.endsWith("jar") }.map { zipTree(it) }
+    })
 }
 
 repositories {
