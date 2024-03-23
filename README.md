@@ -36,7 +36,7 @@ Follow these steps to deploy an instance of ToodleBot to a Uberspace.
 9. Add `supervisord` script and run the app:
    ```bash
    ssh <username>@<hostname> "echo \"[program:toodlebot]
-   command=java -jar ~/toodlebot-0.1.0.jar
+   command=java -jar ~/toodlebot-0.1.2.jar
    startsecs=20
    autostart=false\" > ~/etc/services.d/toodlebot.ini
    supervisorctl reread
