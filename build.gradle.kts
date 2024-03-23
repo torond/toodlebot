@@ -18,6 +18,12 @@ application {
     mainClassName = "io.toodlebot.ApplicationKt"
 }
 
+tasks.withType<Jar> {
+    manifest {
+        attributes["Main-Class"] = "io.toodlebot.ApplicationKt"
+    }
+}
+
 repositories {
     mavenLocal()
     jcenter()
