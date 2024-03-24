@@ -6,7 +6,7 @@ Message [@thetoodlebot](https://t.me/thetoodlebot) to get started!
 ## Deployment Setup
 Follow these steps to deploy an instance of ToodleBot to a Uberspace.
 
-1. Go to [uberspace.de](https://www.uberspace.de) and register for a new space.
+1. Go to [uberspace.de](https://www.uberspace.de) and register for a new space. `username` is your Uberspace username, `hostname` is the name of the server that the space runs on.
 2. Add an SSH key under Logins in the dashboard.
 3. (Optional) Add a custom domain:
    ```bash
@@ -33,10 +33,11 @@ Follow these steps to deploy an instance of ToodleBot to a Uberspace.
    ```bash
    ssh <username>@<hostname> "mkdir data"
    ```
-9. Add `supervisord` script and run the app:
+9. Add `supervisord` script and run the app. `directory` change is needed so the app can access `environment.properties`.
    ```bash
    ssh <username>@<hostname> "echo \"[program:toodlebot]
-   command=java -jar ~/toodlebot-0.1.2.jar
+   directory=/home/<username>
+   command=java -jar toodlebot-0.1.2.jar
    startsecs=20
    autostart=false\" > ~/etc/services.d/toodlebot.ini
    supervisorctl reread
