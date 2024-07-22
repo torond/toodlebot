@@ -24,7 +24,7 @@ Follow these steps to deploy an instance of ToodleBot to a Uberspace.
    ```
 8. Add config file:
    ```bash
-   ssh <username>@<hostname> "echo \"domain=<domain of server>                        
+   ssh <username>@<hostname> "echo \"domain=https://<domain of server>                        
    port=8088
    bot_username=<name of the Telegram bot without @>
    bot_token=<token of the Telegram bot>\" > environment.properties"
